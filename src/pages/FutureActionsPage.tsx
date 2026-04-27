@@ -1,0 +1,223 @@
+import { useEffect, useState } from "react";
+import { LoadingOverlay } from "../components/LoadingOverlay";
+import * as db from "../lib/db";
+import type { BoatSystem, FutureAction } from "../lib/types";
+import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowCheckbox, BulkDeleteBar } from "../components/SelectModeBar";
+import { FormActions, FormGrid, FormSection, InputField, SelectField, TextareaField } from "../components/FormField";
+import { Modal } from "../components/Modal";
+import { sysName, useI18n } from "../lib/i18n";
+import { isSupabaseConfigured } from "../lib/supabase";
+import { useActiveBoat } from "../providers/ActiveBoatProvider";
+import { useAppData } from "../providers/AppDataProvider";
+
+const STATUSES = ["pending", "planned", "in_progress", "done", "cancelled", "postponed"] as const;
+const PRIORITIES = ["low", "medium", "high", "critical"] as const;
+const KINDS = ["future_maintenance", "upgrade", "review", "administrative", "preparation", "next_haul_out"] as const;
+
+function FutureActionForm({
+  initial, boatName, systems, onSave, onDelete, onCancel, loading, error,
+}: {
+  initial: Omit<FutureAction, "id" | "boatName" | "systemName">;
+  boatName: string;
+  systems: BoatSystem[];
+  onSave: (d: Omit<FutureAction, "id" | "boatName" | "systemName">) => void;
+  onDelete?: () => void;
+  onCancel: () => void;
+  loading: boolean;
+  error: string | null;
+}) {
+  const [form, setForm] = useState(initial);
+  const { t, locale } = useI18n();
+
+  function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
+    setForm((p) => ({ ...p, [k]: v }));
+  }
+
+  return (
+    <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+      <FormSection>
+        <div className="form-boat-badge">{boatName}</div>
+        <FormGrid>
+          <SelectField label={t("system")} value={form.boatSystemId ?? ""}
+            onChange={(e) => set("boatSystemId", e.target.value || null)}>
+            <option value="">-- Sistema --</option>
+            {systems.map((s) => <option key={s.id} value={s.id}>{sysName(s, locale)}</option>)}
+          </SelectField>
+          <SelectField label={t("kind")} value={form.kind} onChange={(e) => set("kind", e.target.value as typeof form.kind)}>
+            {KINDS.map((k) => <option key={k} value={k}>{t(`kind_${k}`)}</option>)}
+          </SelectField>
+          <SelectField label={t("priority")} value={form.priority} onChange={(e) => set("priority", e.target.value as typeof form.priority)}>
+            {PRIORITIES.map((p) => <option key={p} value={p}>{t(p)}</option>)}
+          </SelectField>
+          <SelectField label={t("status")} value={form.status} onChange={(e) => set("status", e.target.value as typeof form.status)}>
+            {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
+          </SelectField>
+          <InputField label="Fecha objetivo" type="date" value={form.targetDate ?? ""} onChange={(e) => set("targetDate", e.target.value || null)} />
+          <InputField label={t("responsible")} value={form.responsible ?? ""} onChange={(e) => set("responsible", e.target.value || null)} />
+        </FormGrid>
+        <InputField label={t("title")} required value={form.title} onChange={(e) => set("title", e.target.value)} />
+        <TextareaField label={t("description")} value={form.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
+        <TextareaField label={t("notes")} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} />
+      </FormSection>
+      {error && <p className="form-error">{error}</p>}
+      <FormActions onCancel={onCancel} loading={loading} danger={!!onDelete} onDanger={onDelete} dangerLabel={t("delete")} />
+    </form>
+  );
+}
+
+export function FutureActionsPage() {
+  const { t, locale } = useI18n();
+  const { futureActions, refresh, loading } = useAppData();
+  const { activeBoatId, activeBoat } = useActiveBoat();
+  const [modal, setModal] = useState<"create" | "edit" | null>(null);
+  const [editing, setEditing] = useState<FutureAction | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [boatSystems, setBoatSystems] = useState<BoatSystem[]>([]);
+  const { selectMode, selected, enterSelectMode, exitSelectMode, toggleOne, toggleAll } = useSelectMode();
+  const [deleting, setDeleting] = useState(false);
+
+  const boatName = activeBoat ? activeBoat.name : "Sin barco activo";
+
+  const filtered = futureActions.filter((a) => {
+    if (activeBoatId && a.boatId !== activeBoatId) return false;
+    if (filterStatus && a.status !== filterStatus) return false;
+    return true;
+  });
+
+  useEffect(() => {
+    if (!activeBoatId) return;
+    db.fetchBoatSystems(activeBoatId).then(setBoatSystems).catch(() => {});
+  }, [activeBoatId]);
+
+  const EMPTY: Omit<FutureAction, "id" | "boatName" | "systemName"> = {
+    boatId: activeBoatId ?? "", boatSystemId: null, haulOutId: null, observationId: null,
+    kind: "future_maintenance", title: "", description: null,
+    priority: "medium", status: "pending", targetDate: null, responsible: null, notes: null,
+  };
+
+  function openCreate() { setEditing(null); setError(null); setModal("create"); }
+  function openEdit(a: FutureAction) { setEditing(a); setError(null); setModal("edit"); }
+  function closeModal() { setModal(null); setEditing(null); }
+
+  async function handleSave(data: Omit<FutureAction, "id" | "boatName" | "systemName">) {
+    const payload = { ...data, boatId: activeBoatId ?? data.boatId };
+    if (!payload.boatId) { setError("No hay barco activo"); return; }
+    if (!payload.boatSystemId) {
+      const systems = boatSystems.length ? boatSystems : await db.fetchBoatSystems(payload.boatId);
+      const fallbackSystem = systems[0];
+      if (!fallbackSystem) {
+        setError("Añade primero al menos un sistema al barco.");
+        return;
+      }
+      payload.boatSystemId = fallbackSystem.id;
+    }
+    setSaving(true); setError(null);
+    try {
+      if (editing) await db.updateFutureAction(editing.id, payload);
+      else await db.createFutureAction(payload);
+      await refresh(); closeModal();
+    } catch (err) { setError(err instanceof Error ? err.message : "Error"); }
+    finally { setSaving(false); }
+  }
+
+  async function handleDeleteSelected() {
+    if (!confirm(`¿Eliminar ${selected.size} acción(es)?`)) return;
+    setDeleting(true);
+    try { await Promise.all([...selected].map((id) => db.deleteFutureAction(id))); await refresh(); exitSelectMode(); }
+    catch (err) { setError(err instanceof Error ? err.message : "Error"); }
+    finally { setDeleting(false); }
+  }
+
+  async function handleDelete() {
+    if (!editing || !confirm(`¿Eliminar "${editing.title}"?`)) return;
+    setSaving(true);
+    try { await db.deleteFutureAction(editing.id); await refresh(); closeModal(); }
+    catch (err) { setError(err instanceof Error ? err.message : "Error"); }
+    finally { setSaving(false); }
+  }
+
+  if (!activeBoatId) {
+    return (
+      <section className="page">
+        <div className="section-title">
+          <span className="eyebrow">{t("futureActions")}</span>
+          <h2>Acciones futuras planificadas</h2>
+        </div>
+        <div className="empty-state"><p>Selecciona un barco en la barra lateral para ver sus acciones futuras.</p></div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="page">
+      <div className="page-header">
+        <div className="section-title">
+          <span className="eyebrow">{t("futureActions")} · {boatName}</span>
+          <h2>Acciones futuras planificadas</h2>
+        </div>
+        <SelectModeHeaderButtons selectMode={selectMode} onEnter={enterSelectMode} onCancel={exitSelectMode}>
+          {isSupabaseConfigured && (
+            <button className="btn-primary" onClick={openCreate} type="button">+ {t("newAction")}</button>
+          )}
+        </SelectModeHeaderButtons>
+      </div>
+
+      <div className="filter-bar">
+        <select className="form-input form-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <option value="">Todos los estados</option>
+          {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
+        </select>
+      </div>
+
+      <article className="panel-card">
+        {loading && <LoadingOverlay />}
+        <div className="data-table">
+          <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.9fr 0.9fr 0.9fr auto" }}>
+            <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((a) => a.id)} selected={selected} onToggleAll={toggleAll} />
+            <span>Acción</span><span>Sistema</span><span>Tipo</span><span>Prioridad</span><span>Estado</span><span></span>
+          </div>
+          {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay acciones futuras.</p></div>}
+          {filtered.map((a) => (
+            <div className="data-table-row" key={a.id} style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.9fr 0.9fr 0.9fr auto" }}>
+              <SelectRowCheckbox selectMode={selectMode} id={a.id} selected={selected} onToggle={toggleOne} disabled={deleting} />
+              <div>
+                <strong style={{ display: "block" }}>{a.title}</strong>
+                {a.targetDate && <span className="data-table-cell-muted">{a.targetDate}</span>}
+              </div>
+              <span className="data-table-cell-muted">{a.systemName}</span>
+              <span><span className={`pill kind-${a.kind}`}>{t(`kind_${a.kind}`)}</span></span>
+              <span><span className={`pill ${a.priority}`}>{t(a.priority)}</span></span>
+              <span><span className={`pill ${a.status}`}>{t(a.status)}</span></span>
+              <div className="row-actions">
+                {isSupabaseConfigured && (
+                  <button className="btn-icon" onClick={() => openEdit(a)} type="button" title="Editar">✏</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </article>
+
+      <BulkDeleteBar selectMode={selectMode} selected={selected} deleting={deleting} onDelete={handleDeleteSelected} onCancel={exitSelectMode} label="acción" />
+
+      {modal && (
+        <Modal title={modal === "create" ? t("newAction") : t("editAction")} onClose={closeModal} wide>
+          <FutureActionForm
+            initial={editing
+              ? { boatId: editing.boatId, boatSystemId: editing.boatSystemId, haulOutId: editing.haulOutId,
+                  observationId: editing.observationId, kind: editing.kind, title: editing.title,
+                  description: editing.description, priority: editing.priority, status: editing.status,
+                  targetDate: editing.targetDate, responsible: editing.responsible, notes: editing.notes }
+              : EMPTY}
+            boatName={boatName}
+            systems={boatSystems}
+            onSave={handleSave} onDelete={editing ? handleDelete : undefined}
+            onCancel={closeModal} loading={saving} error={error}
+          />
+        </Modal>
+      )}
+    </section>
+  );
+}

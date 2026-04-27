@@ -1,0 +1,84 @@
+/* ── Inline: floats over the table area without removing page content ── */
+.loading-overlay--inline {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+  padding: 2rem 0;
+}
+
+/* ── Full-screen: covers the whole viewport on initial app load ── */
+.loading-overlay--full {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  background: var(--bg);
+}
+
+.loading-anchor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loading-anchor svg {
+  width: 52px;
+  height: 52px;
+  animation: anchor-bob 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 40%, transparent));
+}
+
+@keyframes anchor-bob {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25%       { transform: translateY(-4px) rotate(-3deg); }
+  50%       { transform: translateY(-2px) rotate(0deg); }
+  75%       { transform: translateY(-5px) rotate(3deg); }
+}
+
+/* Each SVG part fades in sequentially to suggest drawing */
+.anchor-ring   { stroke-dasharray: 32; stroke-dashoffset: 32; animation: draw 0.5s 0.1s ease forwards; }
+.anchor-shaft  { stroke-dasharray: 20; stroke-dashoffset: 20; animation: draw 0.4s 0.4s ease forwards; }
+.anchor-bar    { stroke-dasharray: 22; stroke-dashoffset: 22; animation: draw 0.4s 0.7s ease forwards; }
+.anchor-left   { stroke-dasharray: 18; stroke-dashoffset: 18; animation: draw 0.35s 0.9s ease forwards; }
+.anchor-right  { stroke-dasharray: 18; stroke-dashoffset: 18; animation: draw 0.35s 0.9s ease forwards; }
+.anchor-tip-l  { opacity: 0; animation: fade-in 0.2s 1.15s ease forwards; }
+.anchor-tip-r  { opacity: 0; animation: fade-in 0.2s 1.15s ease forwards; }
+
+@keyframes draw    { to { stroke-dashoffset: 0; } }
+@keyframes fade-in { to { opacity: 1; } }
+
+/* Wave dots */
+.loading-wave {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.loading-wave span {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.3;
+  animation: wave-pulse 1.4s ease-in-out infinite;
+}
+
+.loading-wave span:nth-child(1) { animation-delay: 0s; }
+.loading-wave span:nth-child(2) { animation-delay: 0.2s; background: color-mix(in srgb, var(--accent) 70%, var(--accent-warm) 30%); }
+.loading-wave span:nth-child(3) { animation-delay: 0.4s; background: var(--accent-warm); }
+
+@keyframes wave-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50%       { opacity: 1;    transform: scale(1.15); }
+}
+
+/* Panel-card wrapper needs relative positioning to contain inline overlay */
+.panel-card { position: relative; }
