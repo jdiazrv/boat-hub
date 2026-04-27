@@ -1,9 +1,9 @@
-import * as XLSX from "xlsx";
 import type {
   Boat,
   MaintenanceTask, HaulOut, Observation, FutureAction, FuturePurchase,
   InventoryItem, HourLog, FuelLog, Marina, Shipyard,
 } from "./types";
+import templateUrl from "../assets/template.xlsx?url";
 
 type ExportExcelData = {
   maintenanceTasks: MaintenanceTask[];
@@ -20,354 +20,442 @@ type ExportExcelData = {
 
 type ExportSectionKey = keyof ExportExcelData;
 type ExportSectionSelection = Partial<Record<ExportSectionKey, boolean>>;
-
-function autoWidth(ws: XLSX.WorkSheet) {
-  const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 });
-  const colWidths: number[] = [];
-  for (const row of data) {
-    row.forEach((cell, i) => {
-      const len = String(cell ?? "").length;
-      colWidths[i] = Math.min(60, Math.max(colWidths[i] ?? 8, len + 2));
-    });
-  }
-  ws["!cols"] = colWidths.map((w) => ({ wch: w }));
-}
-
-function sheet<T extends object>(rows: T[], headers: { key: keyof T; label: string }[]): XLSX.WorkSheet {
-  const headerRow = headers.map((h) => h.label);
-  const dataRows = rows.map((r) => headers.map((h) => {
-    const v = r[h.key];
-    return v == null ? "" : v;
-  }));
-  const ws = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
-  autoWidth(ws);
-  return ws;
-}
-
-// ARGB hex for xlsx — no leading #
-const C = {
-  navy:      "FF0A1628",
-  darkBlue:  "FF0D2137",
-  ink:       "FF07111F",
-  cream:     "FFFFFCF7",
-  ivory:     "FFF7F2EA",
-  line:      "FFE5D4BA",
-  mutedText: "FF666B73",
-  blueText:  "FF081D35",
-  bronze:    "FFB48A4A",
-  bronze2:   "FFD9BC87",
-  teal:      "FF14B8A6",
-  accent:    "FF3B82F6",   // --accent
-  accentWarm:"FFEC7C3F",   // --accent-warm
-  gold:      "FFFBBF24",
-  white:     "FFFFFFFF",
-  offWhite:  "FFF0F4FF",
-  soft:      "FFB0C4DE",
-  mid:       "FF4A6480",
-  shadow:    "FF1A3450",
+type Column<T> = { label: string; value: (row: T) => string | number | null | undefined };
+type ZipEntry = {
+  name: string;
+  data: Uint8Array;
+  compression: number;
+  crc: number;
+  compressedSize: number;
+  uncompressedSize: number;
+  modTime: number;
+  modDate: number;
 };
 
-function rgb(argb: string) {
-  return { argb };
+const TEMPLATE_URL = templateUrl;
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+const WORKSHEET_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
+const WORKSHEET_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml";
+const BASE_WORKBOOK_XML =
+  '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><workbookPr/><workbookProtection/><bookViews><workbookView visibility="visible" minimized="0" showHorizontalScroll="1" showVerticalScroll="1" showSheetTabs="1" tabRatio="600" firstSheet="0" activeTab="0" autoFilterDateGrouping="1"/></bookViews><sheets><sheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" name="ALDEBARAN" sheetId="1" state="visible" r:id="rId1"/></sheets><definedNames/><calcPr calcId="124519" fullCalcOnLoad="1"/></workbook>';
+const BASE_RELS_XML =
+  '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="/xl/worksheets/sheet1.xml" Id="rId1"/><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml" Id="rId2"/><Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml" Id="rId3"/></Relationships>';
+const BASE_CONTENT_TYPES_XML =
+  '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/xl/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>';
+
+const SECTIONS = [
+  {
+    key: "maintenanceTasks",
+    sheetName: "Mantenimiento",
+    rows: (data: ExportExcelData) => data.maintenanceTasks,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Sistema", value: (r) => r.systemName },
+      { label: "Título", value: (r) => r.title },
+      { label: "Tipo", value: (r) => r.kind },
+      { label: "Estado", value: (r) => r.status },
+      { label: "Prioridad", value: (r) => r.priority },
+      { label: "Fecha prevista", value: (r) => r.dueDate },
+      { label: "Fecha realizada", value: (r) => r.doneDate },
+      { label: "Responsable", value: (r) => r.responsible },
+      { label: "Realizado por", value: (r) => r.performedBy },
+      { label: "Coste (€)", value: (r) => r.cost },
+      { label: "Horas motor", value: (r) => r.engineHours },
+      { label: "Descripción", value: (r) => r.description },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<MaintenanceTask>[],
+  },
+  {
+    key: "haulOuts",
+    sheetName: "Varadas",
+    rows: (data: ExportExcelData) => data.haulOuts,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Nombre", value: (r) => r.name },
+      { label: "Estado", value: (r) => r.status },
+      { label: "Varadero", value: (r) => r.shipyardName },
+      { label: "Ubicación", value: (r) => r.location },
+      { label: "Inicio", value: (r) => r.startDate },
+      { label: "Fin", value: (r) => r.endDate },
+      { label: "Presupuesto (€)", value: (r) => r.estimatedCost },
+      { label: "Pagado (€)", value: (r) => r.paidToDate },
+      { label: "Coste final (€)", value: (r) => r.finalCost },
+      { label: "Responsable", value: (r) => r.responsible },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<HaulOut>[],
+  },
+  {
+    key: "observations",
+    sheetName: "Observaciones",
+    rows: (data: ExportExcelData) => data.observations,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Sistema", value: (r) => r.systemName },
+      { label: "Título", value: (r) => r.title },
+      { label: "Prioridad", value: (r) => r.priority },
+      { label: "Estado", value: (r) => r.status },
+      { label: "Fecha", value: (r) => r.observedAt },
+      { label: "Reportado por", value: (r) => r.reportedBy },
+      { label: "Descripción", value: (r) => r.description },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<Observation>[],
+  },
+  {
+    key: "futureActions",
+    sheetName: "Acciones futuras",
+    rows: (data: ExportExcelData) => data.futureActions,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Sistema", value: (r) => r.systemName },
+      { label: "Título", value: (r) => r.title },
+      { label: "Tipo", value: (r) => r.kind },
+      { label: "Prioridad", value: (r) => r.priority },
+      { label: "Estado", value: (r) => r.status },
+      { label: "Fecha objetivo", value: (r) => r.targetDate },
+      { label: "Responsable", value: (r) => r.responsible },
+      { label: "Descripción", value: (r) => r.description },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<FutureAction>[],
+  },
+  {
+    key: "futurePurchases",
+    sheetName: "Compras",
+    rows: (data: ExportExcelData) => data.futurePurchases,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Sistema", value: (r) => r.systemName },
+      { label: "Artículo", value: (r) => r.articleName },
+      { label: "Prioridad", value: (r) => r.priority },
+      { label: "Estado", value: (r) => r.status },
+      { label: "Cantidad", value: (r) => r.quantity },
+      { label: "Unidad", value: (r) => r.unit },
+      { label: "Coste estimado (€)", value: (r) => r.estimatedCost },
+      { label: "Proveedor", value: (r) => r.supplier },
+      { label: "Fecha objetivo", value: (r) => r.targetDate },
+      { label: "Descripción", value: (r) => r.description },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<FuturePurchase>[],
+  },
+  {
+    key: "inventoryItems",
+    sheetName: "Inventario",
+    rows: (data: ExportExcelData) => data.inventoryItems,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Sistema", value: (r) => r.systemName },
+      { label: "Elemento", value: (r) => r.name },
+      { label: "Categoría", value: (r) => r.category },
+      { label: "Fabricante", value: (r) => r.manufacturer },
+      { label: "Modelo", value: (r) => r.model },
+      { label: "Referencia", value: (r) => r.reference },
+      { label: "Nº serie", value: (r) => r.serialNumber },
+      { label: "Cantidad", value: (r) => r.quantity },
+      { label: "Stock", value: (r) => r.stock },
+      { label: "Stock mínimo", value: (r) => r.minimumStock },
+      { label: "Unidad", value: (r) => r.unit },
+      { label: "Estado", value: (r) => r.status },
+      { label: "Ubicación", value: (r) => r.location },
+      { label: "Proveedor", value: (r) => r.supplier },
+      { label: "F. compra", value: (r) => r.purchaseDate },
+      { label: "Coste adquisición (€)", value: (r) => r.acquisitionCost },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<InventoryItem>[],
+  },
+  {
+    key: "hourLogs",
+    sheetName: "Horas motor",
+    rows: (data: ExportExcelData) => data.hourLogs,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Contador", value: (r) => r.counterName },
+      { label: "Fecha", value: (r) => r.loggedAt },
+      { label: "Horas", value: (r) => r.hours },
+      { label: "Registrado por", value: (r) => r.loggedBy },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<HourLog>[],
+  },
+  {
+    key: "fuelLogs",
+    sheetName: "Combustible",
+    rows: (data: ExportExcelData) => data.fuelLogs,
+    columns: [
+      { label: "Barco", value: (r) => r.boatName },
+      { label: "Fecha", value: (r) => r.fuelledAt },
+      { label: "Tipo combustible", value: (r) => r.fuelType },
+      { label: "Cantidad", value: (r) => r.quantity },
+      { label: "Unidad", value: (r) => r.unit },
+      { label: "€/unidad", value: (r) => r.pricePerUnit },
+      { label: "Coste total (€)", value: (r) => r.totalCost },
+      { label: "Proveedor", value: (r) => r.supplier },
+      { label: "Horas motor", value: (r) => r.engineHoursAtFuelling },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<FuelLog>[],
+  },
+  {
+    key: "marinas",
+    sheetName: "Marinas",
+    rows: (data: ExportExcelData) => data.marinas,
+    columns: [
+      { label: "Nombre", value: (r) => r.name },
+      { label: "País", value: (r) => r.country },
+      { label: "Región", value: (r) => r.region },
+      { label: "Dirección", value: (r) => r.address },
+      { label: "Teléfono", value: (r) => r.phone },
+      { label: "Email", value: (r) => r.email },
+      { label: "Web", value: (r) => r.website },
+      { label: "VHF", value: (r) => r.vhfChannel },
+      { label: "Tipo amarre", value: (r) => r.mooringType },
+      { label: "Valoración", value: (r) => r.rating },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<Marina>[],
+  },
+  {
+    key: "shipyards",
+    sheetName: "Varaderos",
+    rows: (data: ExportExcelData) => data.shipyards,
+    columns: [
+      { label: "Nombre", value: (r) => r.name },
+      { label: "País", value: (r) => r.country },
+      { label: "Región", value: (r) => r.region },
+      { label: "Dirección", value: (r) => r.address },
+      { label: "Teléfono", value: (r) => r.phone },
+      { label: "Email", value: (r) => r.email },
+      { label: "Tipo elevación", value: (r) => r.liftType },
+      { label: "Capacidad (t)", value: (r) => r.liftCapacityTons },
+      { label: "Eslora máx (m)", value: (r) => r.maxLengthM },
+      { label: "Izada/botadura", value: (r) => r.liftInOutPrice },
+      { label: "Almacenaje día", value: (r) => r.dailyStoragePrice },
+      { label: "Almacenaje mes", value: (r) => r.monthlyStoragePrice },
+      { label: "Moneda", value: (r) => r.currency },
+      { label: "Valoración", value: (r) => r.rating },
+      { label: "Notas", value: (r) => r.notes },
+    ] satisfies Column<Shipyard>[],
+  },
+] as const;
+
+function escapeXml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-function coverCell(
-  value: string | number,
-  opts: {
-    bold?: boolean;
-    sz?: number;
-    color?: string;
-    bg?: string;
-    align?: "left" | "center" | "right";
-    italic?: boolean;
-    border?: boolean;
-    font?: string;
-  } = {}
-): XLSX.CellObject {
-  const cell: XLSX.CellObject = {
-    v: value,
-    t: typeof value === "number" ? "n" : "s",
-    s: {
-      font: {
-        name: opts.font ?? "Calibri",
-        bold: opts.bold ?? false,
-        italic: opts.italic ?? false,
-        sz: opts.sz ?? 11,
-        color: rgb(opts.color ?? C.white),
-      },
-      fill: opts.bg ? { patternType: "solid", fgColor: rgb(opts.bg) } : undefined,
-      alignment: {
-        horizontal: opts.align ?? "left",
-        vertical: "center",
-        wrapText: true,
-      },
-      border: opts.border ? {
-        bottom: { style: "thin", color: rgb(C.accent) },
-      } : undefined,
-    },
+function colName(index: number) {
+  let name = "";
+  let value = index + 1;
+  while (value > 0) {
+    const mod = (value - 1) % 26;
+    name = String.fromCharCode(65 + mod) + name;
+    value = Math.floor((value - mod) / 26);
+  }
+  return name;
+}
+
+function worksheetXml<T>(rows: T[], columns: Column<T>[]) {
+  const allRows = [columns.map((column) => column.label), ...rows.map((row) => columns.map((column) => column.value(row)))];
+  const sheetRows = allRows.map((row, rowIndex) => {
+    const cells = row.map((cell, colIndex) => {
+      const ref = `${colName(colIndex)}${rowIndex + 1}`;
+      if (typeof cell === "number" && Number.isFinite(cell)) return `<c r="${ref}"><v>${cell}</v></c>`;
+      return `<c r="${ref}" t="inlineStr"><is><t>${escapeXml(cell)}</t></is></c>`;
+    }).join("");
+    return `<row r="${rowIndex + 1}">${cells}</row>`;
+  }).join("");
+  const widths = columns.map((column, index) => {
+    const max = Math.max(column.label.length, ...rows.map((row) => String(column.value(row) ?? "").length));
+    return `<col min="${index + 1}" max="${index + 1}" width="${Math.min(60, Math.max(10, max + 2))}" customWidth="1"/>`;
+  }).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+  <cols>${widths}</cols>
+  <sheetData>${sheetRows}</sheetData>
+</worksheet>`;
+}
+
+function sanitizeSheetName(name: string) {
+  return name.replace(/[\[\]:*?/\\]/g, " ").slice(0, 31) || "Hoja";
+}
+
+function u16(data: Uint8Array, offset: number) {
+  return data[offset] | (data[offset + 1] << 8);
+}
+
+function u32(data: Uint8Array, offset: number) {
+  return (data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24)) >>> 0;
+}
+
+function writeU16(out: number[], value: number) {
+  out.push(value & 255, (value >>> 8) & 255);
+}
+
+function writeU32(out: number[], value: number) {
+  out.push(value & 255, (value >>> 8) & 255, (value >>> 16) & 255, (value >>> 24) & 255);
+}
+
+const crcTable = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+function crc32(data: Uint8Array) {
+  let crc = 0xffffffff;
+  for (const byte of data) crc = crcTable[(crc ^ byte) & 255] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function parseZip(data: Uint8Array): ZipEntry[] {
+  const entries: ZipEntry[] = [];
+  let offset = 0;
+  while (offset + 30 < data.length && u32(data, offset) === 0x04034b50) {
+    const compression = u16(data, offset + 8);
+    const modTime = u16(data, offset + 10);
+    const modDate = u16(data, offset + 12);
+    const crc = u32(data, offset + 14);
+    const compressedSize = u32(data, offset + 18);
+    const uncompressedSize = u32(data, offset + 22);
+    const nameLength = u16(data, offset + 26);
+    const extraLength = u16(data, offset + 28);
+    const nameStart = offset + 30;
+    const name = decoder.decode(data.slice(nameStart, nameStart + nameLength));
+    const dataStart = nameStart + nameLength + extraLength;
+    entries.push({
+      name,
+      data: data.slice(dataStart, dataStart + compressedSize),
+      compression,
+      crc,
+      compressedSize,
+      uncompressedSize,
+      modTime,
+      modDate,
+    });
+    offset = dataStart + compressedSize;
+  }
+  return entries;
+}
+
+function textEntry(name: string, value: string): ZipEntry {
+  const data = encoder.encode(value);
+  return {
+    name,
+    data,
+    compression: 0,
+    crc: crc32(data),
+    compressedSize: data.length,
+    uncompressedSize: data.length,
+    modTime: 0,
+    modDate: 0,
   };
-  return cell;
 }
 
-function makeCoverSheet(boat: Boat | null, exportDate: string, selectedLabels: string[]): XLSX.WorkSheet {
-  const boatName   = boat?.name ?? "Todos los barcos";
-  const owners     = boat?.ownerNames?.join(", ") ?? "—";
-  const boatType   = boat?.boatType ?? "—";
-  const brandModel = boat?.brandModel ?? "—";
-  const buildYear  = boat?.buildYear != null ? String(boat.buildYear) : "—";
-  const propulsion = boat?.propulsion ?? "—";
-  const regNumber  = boat?.registrationNumber ?? "—";
+function writeZip(entries: ZipEntry[]) {
+  const out: number[] = [];
+  const central: number[] = [];
+  let offset = 0;
+  for (const entry of entries) {
+    const name = encoder.encode(entry.name);
+    const localOffset = offset;
+    writeU32(out, 0x04034b50);
+    writeU16(out, 20);
+    writeU16(out, 0);
+    writeU16(out, entry.compression);
+    writeU16(out, entry.modTime);
+    writeU16(out, entry.modDate);
+    writeU32(out, entry.crc);
+    writeU32(out, entry.compressedSize);
+    writeU32(out, entry.uncompressedSize);
+    writeU16(out, name.length);
+    writeU16(out, 0);
+    out.push(...name, ...entry.data);
+    offset = out.length;
 
-  const coverCols = 16;
-  const blank = (bg = C.cream) => coverCell("", { bg, color: C.blueText });
-  const row = (cells: (XLSX.CellObject | string)[] = [], bg = C.cream) => [
-    ...cells,
-    ...Array.from({ length: Math.max(0, coverCols - cells.length) }, () => blank(bg)),
-  ];
-  const cream = C.cream;
-  const side = C.navy;
-  const titleFont = "Didot";
-  const label = (value: string) => coverCell(value, { bold: true, sz: 10, color: C.mutedText, bg: cream, align: "left" });
-  const value = (text: string) => coverCell(text, { bold: true, sz: 14, color: C.blueText, bg: cream, align: "left" });
-  const icon = (text: string) => coverCell(text, { bold: true, sz: 18, color: C.bronze, bg: cream, align: "center" });
-
-  const managementLabels = selectedLabels.length > 0 ? selectedLabels : ["Portada"];
-
-  const aoa: (XLSX.CellObject | string)[][] = [
-    row([], cream),
-    row([blank(side), blank(side), blank(side), blank(side)], cream),
-    row([blank(side), coverCell("⚓", { bold: true, sz: 30, color: C.bronze2, bg: side, align: "center" }), blank(side), blank(side)], cream),
-    row([blank(side), coverCell("BOAT HUB", { bold: true, sz: 11, color: C.white, bg: side, align: "center" }), blank(side), blank(side), coverCell(boatName.toUpperCase(), { bold: true, sz: 42, color: C.blueText, bg: cream, align: "center", font: titleFont })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), coverCell("INFORME DE GESTION NAVAL", { bold: true, sz: 16, color: C.bronze, bg: cream, align: "center" })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), coverCell("────────────────        ✦        ────────────────", { sz: 12, color: C.bronze, bg: cream, align: "center" })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), coverCell(`Exportado el ${exportDate}`, { bold: true, sz: 14, color: C.white, bg: C.navy, align: "center" })], cream),
-    row([blank(side), blank(side), blank(side), blank(side)], cream),
-    row([blank(side), blank(side), blank(side), blank(side), icon("☸"), coverCell("INFORMACIÓN GENERAL", { bold: true, sz: 15, color: C.blueText, bg: cream, align: "left", font: "Georgia" }), blank(cream), blank(cream), blank(cream), blank(cream), icon("⚙"), coverCell("PROPULSIÓN", { bold: true, sz: 15, color: C.blueText, bg: cream, align: "left", font: "Georgia" })], cream),
-    row([blank(side), blank(side), blank(side), blank(side)], cream),
-    row([blank(side), blank(side), blank(side), blank(side), icon("♙"), label("PROPIETARIO"), value(owners), blank(cream), blank(cream), blank(cream), icon("▣"), label("MOTOR"), value(propulsion)], cream),
-    row([blank(side), blank(side), blank(side), blank(side), blank(cream), coverCell("", { bg: C.line }), coverCell("", { bg: C.line }), blank(cream), blank(cream), blank(cream), blank(cream), coverCell("", { bg: C.line }), coverCell("", { bg: C.line })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), icon("⛵"), label("TIPO"), value(boatType), blank(cream), blank(cream), blank(cream), icon("▤"), label("MATRÍCULA"), value(regNumber)], cream),
-    row([blank(side), blank(side), blank(side), blank(side), blank(cream), coverCell("", { bg: C.line }), coverCell("", { bg: C.line }), blank(cream), blank(cream), blank(cream), blank(cream), coverCell("", { bg: C.line }), coverCell("", { bg: C.line })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), icon("◇"), label("MARCA / MODELO"), value(brandModel)], cream),
-    row([blank(side), blank(side), blank(side), blank(side), blank(cream), coverCell("", { bg: C.line }), coverCell("", { bg: C.line })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), icon("▣"), label("AÑO"), value(buildYear)], cream),
-    row([blank(side), blank(side), blank(side), blank(side)], cream),
-    row([blank(side), blank(side), blank(side), blank(side), coverCell("GESTIÓN", { bold: true, sz: 15, color: C.blueText, bg: C.ivory, align: "left", font: "Georgia" })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), coverCell(managementLabels.join("    |    "), { sz: 12, color: C.mutedText, bg: C.ivory, align: "center" })], cream),
-    row([blank(side), blank(side), blank(side), blank(side), coverCell("", { bg: C.ivory })], cream),
-    row([], cream),
-  ];
-
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-  ws["!cols"] = [
-    { wch: 4 }, { wch: 8 }, { wch: 8 }, { wch: 4 },
-    { wch: 5 }, { wch: 18 }, { wch: 24 }, { wch: 4 }, { wch: 4 }, { wch: 4 },
-    { wch: 5 }, { wch: 18 }, { wch: 24 }, { wch: 4 }, { wch: 4 }, { wch: 4 },
-  ];
-  ws["!rows"] = [
-    { hpt: 10 }, { hpt: 18 }, { hpt: 35 }, { hpt: 64 }, { hpt: 30 }, { hpt: 22 }, { hpt: 38 },
-    { hpt: 22 }, { hpt: 34 }, { hpt: 18 }, { hpt: 38 }, { hpt: 3 }, { hpt: 38 }, { hpt: 3 },
-    { hpt: 38 }, { hpt: 3 }, { hpt: 38 }, { hpt: 20 }, { hpt: 36 }, { hpt: 44 }, { hpt: 10 }, { hpt: 12 },
-  ];
-
-  ws["!merges"] = [
-    { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } },
-    { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } },
-    { s: { r: 3, c: 4 }, e: { r: 3, c: 14 } },
-    { s: { r: 4, c: 4 }, e: { r: 4, c: 14 } },
-    { s: { r: 5, c: 4 }, e: { r: 5, c: 14 } },
-    { s: { r: 6, c: 6 }, e: { r: 6, c: 11 } },
-    { s: { r: 8, c: 5 }, e: { r: 8, c: 8 } },
-    { s: { r: 8, c: 11 }, e: { r: 8, c: 13 } },
-    { s: { r: 10, c: 6 }, e: { r: 10, c: 8 } },
-    { s: { r: 10, c: 12 }, e: { r: 10, c: 14 } },
-    { s: { r: 12, c: 6 }, e: { r: 12, c: 8 } },
-    { s: { r: 12, c: 12 }, e: { r: 12, c: 14 } },
-    { s: { r: 14, c: 6 }, e: { r: 14, c: 8 } },
-    { s: { r: 16, c: 6 }, e: { r: 16, c: 8 } },
-    { s: { r: 18, c: 4 }, e: { r: 18, c: 14 } },
-    { s: { r: 19, c: 4 }, e: { r: 19, c: 14 } },
-    { s: { r: 20, c: 4 }, e: { r: 20, c: 14 } },
-  ];
-  ws["!margins"] = { left: 0.25, right: 0.25, top: 0.25, bottom: 0.25, header: 0.1, footer: 0.1 };
-  (ws as any)["!sheetViews"] = [{ showGridLines: false }];
-
-  return ws;
+    writeU32(central, 0x02014b50);
+    writeU16(central, 20);
+    writeU16(central, 20);
+    writeU16(central, 0);
+    writeU16(central, entry.compression);
+    writeU16(central, entry.modTime);
+    writeU16(central, entry.modDate);
+    writeU32(central, entry.crc);
+    writeU32(central, entry.compressedSize);
+    writeU32(central, entry.uncompressedSize);
+    writeU16(central, name.length);
+    writeU16(central, 0);
+    writeU16(central, 0);
+    writeU16(central, 0);
+    writeU16(central, 0);
+    writeU32(central, 0);
+    writeU32(central, localOffset);
+    central.push(...name);
+  }
+  const centralOffset = out.length;
+  out.push(...central);
+  writeU32(out, 0x06054b50);
+  writeU16(out, 0);
+  writeU16(out, 0);
+  writeU16(out, entries.length);
+  writeU16(out, entries.length);
+  writeU32(out, central.length);
+  writeU32(out, centralOffset);
+  writeU16(out, 0);
+  return new Uint8Array(out);
 }
 
-export function exportAllToExcel(
+function withAddedSheets(entries: ZipEntry[], sections: { sheetName: string; xml: string }[]) {
+  const skipped = new Set(["xl/workbook.xml", "xl/_rels/workbook.xml.rels", "[Content_Types].xml"]);
+  const nextEntries = entries.filter((entry) => !skipped.has(entry.name));
+  let workbook = BASE_WORKBOOK_XML;
+  let rels = BASE_RELS_XML;
+  let contentTypes = BASE_CONTENT_TYPES_XML;
+  const sheetIdStart = 2;
+  const relIdStart = 4;
+
+  sections.forEach((section, index) => {
+    const sheetNumber = sheetIdStart + index;
+    const relId = `rId${relIdStart + index}`;
+    const sheetPath = `xl/worksheets/sheet${sheetNumber}.xml`;
+    workbook = workbook.replace("</sheets>", `<sheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" name="${escapeXml(sanitizeSheetName(section.sheetName))}" sheetId="${sheetNumber}" state="visible" r:id="${relId}"/></sheets>`);
+    rels = rels.replace("</Relationships>", `<Relationship Type="${WORKSHEET_REL}" Target="/${sheetPath}" Id="${relId}"/></Relationships>`);
+    contentTypes = contentTypes.replace("</Types>", `<Override PartName="/${sheetPath}" ContentType="${WORKSHEET_CONTENT_TYPE}"/></Types>`);
+    nextEntries.push(textEntry(sheetPath, section.xml));
+  });
+
+  nextEntries.push(textEntry("xl/workbook.xml", workbook));
+  nextEntries.push(textEntry("xl/_rels/workbook.xml.rels", rels));
+  nextEntries.push(textEntry("[Content_Types].xml", contentTypes));
+  return nextEntries;
+}
+
+export async function exportAllToExcel(
   boatName: string,
   data: ExportExcelData,
-  boat: Boat | null = null,
+  _boat: Boat | null = null,
   selection?: ExportSectionSelection,
 ) {
   const includes = (key: ExportSectionKey) => selection?.[key] ?? true;
-  const selectedLabels = [
-    includes("maintenanceTasks") ? "MANTENIMIENTO" : null,
-    includes("haulOuts") ? "VARADAS" : null,
-    includes("observations") ? "OBSERVACIONES" : null,
-    includes("futureActions") ? "ACCIONES" : null,
-    includes("futurePurchases") ? "COMPRAS" : null,
-    includes("inventoryItems") ? "INVENTARIO" : null,
-    includes("hourLogs") ? "HORAS" : null,
-    includes("fuelLogs") ? "COMBUSTIBLE" : null,
-    includes("marinas") ? "MARINAS" : null,
-    includes("shipyards") ? "VARADEROS" : null,
-  ].filter((label): label is string => Boolean(label));
-  const exportDate = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
-  const wb = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(wb, makeCoverSheet(boat, exportDate, selectedLabels), "Portada");
-
-  if (includes("maintenanceTasks")) XLSX.utils.book_append_sheet(wb, sheet(data.maintenanceTasks, [
-    { key: "boatName",    label: "Barco" },
-    { key: "systemName",  label: "Sistema" },
-    { key: "title",       label: "Título" },
-    { key: "kind",        label: "Tipo" },
-    { key: "status",      label: "Estado" },
-    { key: "priority",    label: "Prioridad" },
-    { key: "dueDate",     label: "Fecha prevista" },
-    { key: "doneDate",    label: "Fecha realizada" },
-    { key: "responsible", label: "Responsable" },
-    { key: "performedBy", label: "Realizado por" },
-    { key: "cost",        label: "Coste (€)" },
-    { key: "engineHours", label: "Horas motor" },
-    { key: "description", label: "Descripción" },
-    { key: "notes",       label: "Notas" },
-  ]), "Mantenimiento");
-
-  if (includes("haulOuts")) XLSX.utils.book_append_sheet(wb, sheet(data.haulOuts, [
-    { key: "boatName",      label: "Barco" },
-    { key: "name",          label: "Nombre" },
-    { key: "status",        label: "Estado" },
-    { key: "shipyardName",  label: "Varadero" },
-    { key: "location",      label: "Ubicación" },
-    { key: "startDate",     label: "Inicio" },
-    { key: "endDate",       label: "Fin" },
-    { key: "estimatedCost", label: "Presupuesto (€)" },
-    { key: "paidToDate",    label: "Pagado (€)" },
-    { key: "finalCost",     label: "Coste final (€)" },
-    { key: "responsible",   label: "Responsable" },
-    { key: "notes",         label: "Notas" },
-  ]), "Varadas");
-
-  if (includes("observations")) XLSX.utils.book_append_sheet(wb, sheet(data.observations, [
-    { key: "boatName",   label: "Barco" },
-    { key: "systemName", label: "Sistema" },
-    { key: "title",      label: "Título" },
-    { key: "priority",   label: "Prioridad" },
-    { key: "status",     label: "Estado" },
-    { key: "observedAt", label: "Fecha" },
-    { key: "reportedBy", label: "Reportado por" },
-    { key: "description",label: "Descripción" },
-    { key: "notes",      label: "Notas" },
-  ]), "Observaciones");
-
-  if (includes("futureActions")) XLSX.utils.book_append_sheet(wb, sheet(data.futureActions, [
-    { key: "boatName",   label: "Barco" },
-    { key: "systemName", label: "Sistema" },
-    { key: "title",      label: "Título" },
-    { key: "kind",       label: "Tipo" },
-    { key: "priority",   label: "Prioridad" },
-    { key: "status",     label: "Estado" },
-    { key: "targetDate", label: "Fecha objetivo" },
-    { key: "responsible",label: "Responsable" },
-    { key: "description",label: "Descripción" },
-    { key: "notes",      label: "Notas" },
-  ]), "Acciones futuras");
-
-  if (includes("futurePurchases")) XLSX.utils.book_append_sheet(wb, sheet(data.futurePurchases, [
-    { key: "boatName",     label: "Barco" },
-    { key: "systemName",   label: "Sistema" },
-    { key: "articleName",  label: "Artículo" },
-    { key: "priority",     label: "Prioridad" },
-    { key: "status",       label: "Estado" },
-    { key: "quantity",     label: "Cantidad" },
-    { key: "unit",         label: "Unidad" },
-    { key: "estimatedCost",label: "Coste estimado (€)" },
-    { key: "supplier",     label: "Proveedor" },
-    { key: "targetDate",   label: "Fecha objetivo" },
-    { key: "description",  label: "Descripción" },
-    { key: "notes",        label: "Notas" },
-  ]), "Compras");
-
-  if (includes("inventoryItems")) XLSX.utils.book_append_sheet(wb, sheet(data.inventoryItems, [
-    { key: "boatName",       label: "Barco" },
-    { key: "systemName",     label: "Sistema" },
-    { key: "name",           label: "Elemento" },
-    { key: "category",       label: "Categoría" },
-    { key: "manufacturer",   label: "Fabricante" },
-    { key: "model",          label: "Modelo" },
-    { key: "reference",      label: "Referencia" },
-    { key: "serialNumber",   label: "Nº serie" },
-    { key: "quantity",       label: "Cantidad" },
-    { key: "stock",          label: "Stock" },
-    { key: "minimumStock",   label: "Stock mínimo" },
-    { key: "unit",           label: "Unidad" },
-    { key: "status",         label: "Estado" },
-    { key: "location",       label: "Ubicación" },
-    { key: "supplier",       label: "Proveedor" },
-    { key: "purchaseDate",   label: "F. compra" },
-    { key: "acquisitionCost",label: "Coste adquisición (€)" },
-    { key: "notes",          label: "Notas" },
-  ]), "Inventario");
-
-  if (includes("hourLogs")) XLSX.utils.book_append_sheet(wb, sheet(data.hourLogs, [
-    { key: "boatName",    label: "Barco" },
-    { key: "counterName", label: "Contador" },
-    { key: "loggedAt",    label: "Fecha" },
-    { key: "hours",       label: "Horas" },
-    { key: "loggedBy",    label: "Registrado por" },
-    { key: "notes",       label: "Notas" },
-  ]), "Horas motor");
-
-  if (includes("fuelLogs")) XLSX.utils.book_append_sheet(wb, sheet(data.fuelLogs, [
-    { key: "boatName",             label: "Barco" },
-    { key: "fuelledAt",            label: "Fecha" },
-    { key: "fuelType",             label: "Tipo combustible" },
-    { key: "quantity",             label: "Cantidad" },
-    { key: "unit",                 label: "Unidad" },
-    { key: "pricePerUnit",         label: "€/unidad" },
-    { key: "totalCost",            label: "Coste total (€)" },
-    { key: "supplier",             label: "Proveedor" },
-    { key: "engineHoursAtFuelling",label: "Horas motor" },
-    { key: "notes",                label: "Notas" },
-  ]), "Combustible");
-
-  if (includes("marinas")) XLSX.utils.book_append_sheet(wb, sheet(data.marinas, [
-    { key: "name",          label: "Nombre" },
-    { key: "country",       label: "País" },
-    { key: "region",        label: "Región" },
-    { key: "address",       label: "Dirección" },
-    { key: "phone",         label: "Teléfono" },
-    { key: "email",         label: "Email" },
-    { key: "website",       label: "Web" },
-    { key: "vhfChannel",    label: "VHF" },
-    { key: "mooringType",   label: "Tipo amarre" },
-    { key: "rating",        label: "Valoración" },
-    { key: "notes",         label: "Notas" },
-  ]), "Marinas");
-
-  if (includes("shipyards")) XLSX.utils.book_append_sheet(wb, sheet(data.shipyards, [
-    { key: "name",                 label: "Nombre" },
-    { key: "country",              label: "País" },
-    { key: "region",               label: "Región" },
-    { key: "address",              label: "Dirección" },
-    { key: "phone",                label: "Teléfono" },
-    { key: "email",                label: "Email" },
-    { key: "liftType",             label: "Tipo elevación" },
-    { key: "liftCapacityTons",     label: "Capacidad (t)" },
-    { key: "maxLengthM",           label: "Eslora máx (m)" },
-    { key: "liftInOutPrice",       label: "Izada/botadura" },
-    { key: "dailyStoragePrice",    label: "Almacenaje día" },
-    { key: "monthlyStoragePrice",  label: "Almacenaje mes" },
-    { key: "currency",             label: "Moneda" },
-    { key: "rating",               label: "Valoración" },
-    { key: "notes",                label: "Notas" },
-  ]), "Varaderos");
-
+  const sections = SECTIONS
+    .filter((section) => includes(section.key))
+    .map((section) => ({
+      sheetName: section.sheetName,
+      xml: worksheetXml(section.rows(data) as any[], section.columns as Column<any>[]),
+    }));
+  const response = await fetch(TEMPLATE_URL);
+  if (!response.ok) throw new Error("No se pudo cargar la plantilla Excel");
+  const templateBytes = new Uint8Array(await response.arrayBuffer());
+  const entries = parseZip(templateBytes);
+  const output = writeZip(withAddedSheets(entries, sections));
+  const blob = new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const date = new Date().toISOString().slice(0, 10);
   const safeName = boatName.replace(/[^a-zA-Z0-9_\-]/g, "_");
-  XLSX.writeFile(wb, `${safeName}_${date}.xlsx`, { cellStyles: true });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${safeName}_${date}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
