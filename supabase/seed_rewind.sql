@@ -68,7 +68,7 @@ where b.identifier = 'dehler-47-rewind'
 on conflict (boat_id, name) do nothing;
 
 -- ─── Acceso del propietario ───────────────────────────────────────────────────
--- Asigna rol owner_admin a jdiazrv@me.com si el usuario ya existe en auth.
+-- Asigna rol owner_admin a jdiazrv@me.com con todos los permisos.
 
 insert into public.boat_memberships (boat_id, user_id, role)
 select b.id, p.id, 'owner_admin'::public.app_role
@@ -76,6 +76,21 @@ from public.boats b
 join public.user_profiles p on p.email = 'jdiazrv@me.com'
 where b.identifier = 'dehler-47-rewind'
 on conflict (boat_id, user_id) do nothing;
+
+insert into public.boat_membership_permissions (membership_id, permission)
+select bm.id, perm.permission::public.app_permission
+from public.boat_memberships bm
+join public.boats b on b.id = bm.boat_id
+join public.user_profiles p on p.id = bm.user_id
+cross join (values
+  ('view'), ('create'), ('edit'), ('delete'), ('close'), ('approve'), ('manage_attachments'), ('manage_shared_searches')
+) as perm(permission)
+where b.identifier = 'dehler-47-rewind'
+  and p.email = 'jdiazrv@me.com'
+  and not exists (
+    select 1 from public.boat_membership_permissions x
+    where x.membership_id = bm.id and x.permission = perm.permission::public.app_permission
+  );
 
 -- ─── Plan de mantenimiento periódico — Volvo D2-75 ───────────────────────────
 
