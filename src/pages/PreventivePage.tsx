@@ -127,6 +127,7 @@ export function PreventivePage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<"" | "overdue" | "due_soon" | "ok">("");
+  const [filterCategory, setFilterCategory] = useState<string>("");
   const [markingEntry, setMarkingEntry] = useState<BoatScheduleEntry | null>(null);
   const [hourCounters, setHourCounters] = useState<HourCounter[]>([]);
 
@@ -146,7 +147,32 @@ export function PreventivePage() {
 
   useEffect(() => { void refresh(); }, [activeBoatId]);
 
-  const filtered = schedule.filter((e) => !filterState || e.state === filterState);
+  const categories = [...new Set(schedule.map((e) =>
+    locale === "es"
+      ? e.template.systemNameEs || e.template.systemNameEn
+      : e.template.systemNameEn || e.template.systemNameEs
+  ))].filter(Boolean) as string[];
+
+  const filtered = schedule.filter((e) => {
+    if (filterState && e.state !== filterState) return false;
+    if (filterCategory) {
+      const sysLabel = locale === "es"
+        ? e.template.systemNameEs || e.template.systemNameEn
+        : e.template.systemNameEn || e.template.systemNameEs;
+      if (sysLabel !== filterCategory) return false;
+    }
+    return true;
+  });
+
+  const grouped = filtered.reduce<Record<string, BoatScheduleEntry[]>>((acc, entry) => {
+    const sysLabel = locale === "es"
+      ? entry.template.systemNameEs || entry.template.systemNameEn
+      : entry.template.systemNameEn || entry.template.systemNameEs;
+    const key = sysLabel || "Sin categoría";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(entry);
+    return acc;
+  }, {});
 
   async function handleMarkDone(form: DoneForm) {
     if (!markingEntry) return;
@@ -230,6 +256,21 @@ export function PreventivePage() {
         </span>
       </div>
 
+      {categories.length > 1 && (
+        <div className="filter-bar" style={{ marginTop: "-0.25rem" }}>
+          {[{ id: "", name: "Todas las categorías" }, ...categories.map((c) => ({ id: c, name: c }))].map((c) => (
+            <button
+              key={c.id}
+              className={filterCategory === c.id ? "filter-chip active" : "filter-chip"}
+              onClick={() => setFilterCategory(c.id)}
+              type="button"
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading && <p className="data-table-cell-muted">Cargando…</p>}
 
       {schedule.length === 0 && !loading && (
@@ -242,56 +283,58 @@ export function PreventivePage() {
       )}
 
       <div className="schedule-table">
-        {filtered.map((entry) => {
-          const title =
-            locale === "es"
-              ? entry.template.titleEs || entry.template.titleEn || entry.template.title
-              : entry.template.titleEn || entry.template.titleEs || entry.template.title;
-          const sysLabel =
-            locale === "es"
-              ? entry.template.systemNameEs || entry.template.systemNameEn
-              : entry.template.systemNameEn || entry.template.systemNameEs;
+        {Object.entries(grouped).map(([category, entries]) => (
+          <div key={category}>
+            {!filterCategory && (
+              <div className="schedule-category-header">{category}</div>
+            )}
+            {entries.map((entry) => {
+              const title =
+                locale === "es"
+                  ? entry.template.titleEs || entry.template.titleEn || entry.template.title
+                  : entry.template.titleEn || entry.template.titleEs || entry.template.title;
 
-          return (
-            <div key={entry.id} className={`schedule-row state-${entry.state}`}>
-              <div className="schedule-row-info">
-                <span className="schedule-row-sys">{sysLabel}</span>
-                <span className="schedule-row-title">{title}</span>
-                {entry.lastDoneNotes && (
-                  <span className="schedule-row-last-notes">{entry.lastDoneNotes}</span>
-                )}
-              </div>
-              <div className="schedule-row-meta">
-                <span className="schedule-meta-item">
-                  <span className="schedule-meta-label">Intervalo</span>
-                  <strong>{ruleLabel(entry)}</strong>
-                </span>
-                <span className="schedule-meta-item">
-                  <span className="schedule-meta-label">Última</span>
-                  <strong>
-                    {entry.lastDoneAt ?? "—"}
-                    {entry.lastDoneEngineHours ? ` · ${entry.lastDoneEngineHours} h` : ""}
-                  </strong>
-                </span>
-                <span className="schedule-meta-item">
-                  <span className="schedule-meta-label">Próxima</span>
-                  <strong>{entry.nextDueDate ?? "—"}</strong>
-                </span>
-              </div>
-              <div className="schedule-row-actions">
-                <span className={`pill ${entry.state}`}>{stateLabel(entry.state)}</span>
-                {isSupabaseConfigured && (
-                  <button
-                    className="btn-ghost btn-sm" type="button"
-                    onClick={() => setMarkingEntry(entry)}
-                  >
-                    {entry.lastDoneAt ? "✏ Editar" : "✓ Hecho"}
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+              return (
+                <div key={entry.id} className={`schedule-row state-${entry.state}`}>
+                  <div className="schedule-row-info">
+                    <span className="schedule-row-title">{title}</span>
+                    {entry.lastDoneNotes && (
+                      <span className="schedule-row-last-notes">{entry.lastDoneNotes}</span>
+                    )}
+                  </div>
+                  <div className="schedule-row-meta">
+                    <span className="schedule-meta-item">
+                      <span className="schedule-meta-label">Intervalo</span>
+                      <strong>{ruleLabel(entry)}</strong>
+                    </span>
+                    <span className="schedule-meta-item">
+                      <span className="schedule-meta-label">Última</span>
+                      <strong>
+                        {entry.lastDoneAt ?? "—"}
+                        {entry.lastDoneEngineHours ? ` · ${entry.lastDoneEngineHours} h` : ""}
+                      </strong>
+                    </span>
+                    <span className="schedule-meta-item">
+                      <span className="schedule-meta-label">Próxima</span>
+                      <strong>{entry.nextDueDate ?? "—"}</strong>
+                    </span>
+                  </div>
+                  <div className="schedule-row-actions">
+                    <span className={`pill ${entry.state}`}>{stateLabel(entry.state)}</span>
+                    {isSupabaseConfigured && (
+                      <button
+                        className="btn-ghost btn-sm" type="button"
+                        onClick={() => setMarkingEntry(entry)}
+                      >
+                        {entry.lastDoneAt ? "✏ Editar" : "✓ Hecho"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {markingEntry && (

@@ -1615,6 +1615,17 @@ html[data-theme="niebla"] .form-select {
   color: var(--text-soft);
 }
 
+.schedule-category-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-soft);
+  padding: 1rem 0 0.35rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
 .schedule-row-title {
   font-size: 0.9rem;
   font-weight: 500;
