@@ -73,8 +73,10 @@ export function HoursPage() {
   const [deleting, setDeleting] = useState(false);
 
   const boatName = activeBoat ? activeBoat.name : "Sin barco activo";
+  const [selectedCounterId, setSelectedCounterId] = useState<string>("");
 
-  const filtered = hourLogs.filter((l) => !activeBoatId || l.boatId === activeBoatId);
+  const boatLogs = hourLogs.filter((l) => !activeBoatId || l.boatId === activeBoatId);
+  const filtered = selectedCounterId ? boatLogs.filter((l) => l.hourCounterId === selectedCounterId) : boatLogs;
 
   useEffect(() => {
     if (!activeBoatId) return;
@@ -170,6 +172,21 @@ export function HoursPage() {
 
       {!isSupabaseConfigured && (
         <div className="banner warning-banner"><p>Modo demo — conecta Supabase para registrar horas.</p></div>
+      )}
+
+      {counters.length > 1 && (
+        <div className="filter-bar">
+          {[{ id: "", name: "Todos" }, ...counters].map((c) => (
+            <button
+              key={c.id}
+              className={selectedCounterId === c.id ? "filter-chip active" : "filter-chip"}
+              onClick={() => setSelectedCounterId(c.id)}
+              type="button"
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
       )}
 
       <article className="panel-card">
