@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  deleteUser,
   inviteUserAndAssignBoats,
   isCurrentUserSuperuser,
   loadAdminBoats,
@@ -139,6 +140,7 @@ export function AdminUsersPage() {
   const [editPassword, setEditPassword] = useState("");
   const [editAcceptInvite, setEditAcceptInvite] = useState(false);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const managedUser = users.find((user) => user.id === managedUserId) ?? null;
   const matchingUsers = useMemo(() => {
@@ -265,6 +267,27 @@ export function AdminUsersPage() {
       await refresh();
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "No se pudo crear el usuario");
+    }
+  }
+
+  async function handleDeleteUser(user: AdminUser) {
+    if (!window.confirm(`¿Eliminar al usuario "${user.fullName}" (${user.email})? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    setError(null);
+    setNotice(null);
+    setDeletingUserId(user.id);
+
+    try {
+      await deleteUser(user.id);
+      setManagedUserId("");
+      setNotice("Usuario eliminado correctamente.");
+      await refresh();
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "No se pudo eliminar el usuario");
+    } finally {
+      setDeletingUserId(null);
     }
   }
 
@@ -618,6 +641,14 @@ export function AdminUsersPage() {
                     {updatingUserId === managedUser.id ? "Guardando..." : "Actualizar usuario"}
                   </button>
                 </form>
+                <button
+                  className="danger-button"
+                  disabled={deletingUserId === managedUser.id}
+                  onClick={() => handleDeleteUser(managedUser)}
+                  type="button"
+                >
+                  {deletingUserId === managedUser.id ? "Eliminando..." : "Eliminar usuario"}
+                </button>
               </>
             ) : (
               <div className="empty-state">

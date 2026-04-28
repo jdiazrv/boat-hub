@@ -40,6 +40,11 @@ type UpdatePayload = {
   acceptInvite?: boolean;
 };
 
+type DeletePayload = {
+  mode: "delete";
+  userId: string;
+};
+
 type ProfileRow = {
   id: string;
   email: string | null;
@@ -459,7 +464,8 @@ Deno.serve(async (request: Request) => {
       | ListBoatsPayload
       | InvitePayload
       | AssignPayload
-      | UpdatePayload;
+      | UpdatePayload
+      | DeletePayload;
 
     if (payload.mode === "list-users") {
       return jsonResponse(200, {
@@ -562,6 +568,19 @@ Deno.serve(async (request: Request) => {
         userId: payload.userId,
         membershipIds
       });
+    }
+
+    if (payload.mode === "delete") {
+      await serviceClient.from("boat_memberships").delete().eq("user_id", payload.userId);
+      await serviceClient.from("user_profiles").delete().eq("id", payload.userId);
+
+      const { error: deleteAuthError } = await serviceClient.auth.admin.deleteUser(payload.userId);
+
+      if (deleteAuthError) {
+        throw new Error(deleteAuthError.message);
+      }
+
+      return jsonResponse(200, { userId: payload.userId });
     }
 
     if (!payload.role && !payload.password?.trim() && !payload.boatIds && !payload.acceptInvite) {

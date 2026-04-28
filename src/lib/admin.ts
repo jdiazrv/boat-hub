@@ -139,3 +139,7 @@ export async function updateExistingUser(payload: {
     ...payload
   });
 }
+
+export async function deleteUser(userId: string) {
+  return invokeAdminFunction({ mode: "delete", userId });
+}
