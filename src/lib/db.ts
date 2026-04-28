@@ -660,7 +660,7 @@ export async function fetchBoats(): Promise<Boat[]> {
     .from("boats")
     .select(
       `id, name, identifier, registration_number, brand_model, build_year,
-       shipyard, propulsion, boat_type, engine_notes, notes`
+       shipyard, propulsion, boat_type, engine_notes, notes, flag`
     )
     .order("name");
   if (error) throw error;
@@ -676,6 +676,7 @@ export async function fetchBoats(): Promise<Boat[]> {
     boatType: r.boat_type,
     engineNotes: r.engine_notes,
     notes: r.notes,
+    flag: r.flag ?? null,
     ownerIds: [],
     ownerNames: [],
   }));
@@ -697,6 +698,7 @@ export async function createBoat(
       boat_type: payload.boatType,
       engine_notes: payload.engineNotes,
       notes: payload.notes,
+      flag: payload.flag ?? null,
     })
     .select()
     .single();
@@ -724,6 +726,7 @@ export async function updateBoat(
       boat_type: payload.boatType,
       engine_notes: payload.engineNotes,
       notes: payload.notes,
+      flag: payload.flag ?? null,
     })
     .eq("id", id);
   if (error) throw error;

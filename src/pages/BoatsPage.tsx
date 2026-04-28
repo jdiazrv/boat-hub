@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import * as db from "../lib/db";
 import type { Boat, SchedulePlan } from "../lib/types";
 import { FormActions, FormGrid, FormSection, InputField, SelectField, TextareaField } from "../components/FormField";
+import { COUNTRIES, flagEmoji } from "../lib/flags";
 import { Modal } from "../components/Modal";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
@@ -19,6 +20,7 @@ const EMPTY_BOAT: Omit<Boat, "id" | "ownerIds" | "ownerNames"> = {
   boatType: null,
   engineNotes: null,
   notes: null,
+  flag: null,
 };
 
 function BoatForm({
@@ -91,6 +93,14 @@ function BoatForm({
             <option value="RIB">RIB</option>
             <option value="Motorboat">Lancha</option>
             <option value="Other">Otro</option>
+          </SelectField>
+          <SelectField label="Bandera" value={form.flag ?? ""} onChange={(e) => set("flag", e.target.value || null)}>
+            <option value="">-- Sin bandera --</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {flagEmoji(c.code)} {locale === "es" ? c.es : c.en}
+              </option>
+            ))}
           </SelectField>
         </FormGrid>
         <TextareaField label="Notas motor" value={form.engineNotes ?? ""} onChange={(e) => set("engineNotes", e.target.value)} />
@@ -204,7 +214,12 @@ export function BoatsPage() {
           return (
             <article className="panel-card" key={boat.id}>
               <div className="panel-head">
-                <h3>{"name" in boat ? (boat as Boat).name : (boat as typeof boats[0]).name}</h3>
+                <h3>
+                  {"flag" in boat && (boat as Boat).flag
+                    ? `${flagEmoji((boat as Boat).flag!)} `
+                    : ""}
+                  {"name" in boat ? (boat as Boat).name : (boat as typeof boats[0]).name}
+                </h3>
                 <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                   <span className="pill">{("boatType" in boat ? (boat as Boat).boatType : (boat as typeof boats[0]).type) ?? "Boat"}</span>
                   {isSupabaseConfigured && session && full && (
@@ -274,6 +289,7 @@ export function BoatsPage() {
                     boatType: editing.boatType,
                     engineNotes: editing.engineNotes,
                     notes: editing.notes,
+                    flag: editing.flag,
                   }
                 : EMPTY_BOAT
             }

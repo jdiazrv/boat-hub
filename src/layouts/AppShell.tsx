@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { flagEmoji } from "../lib/flags";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
@@ -113,9 +114,10 @@ function BoatSelector() {
         value={activeBoatId ?? ""}
         onChange={(e) => setActiveBoatId(e.target.value || null)}
       >
-        {displayBoats.map((b) => (
-          <option key={b.id} value={b.id}>{b.name}</option>
-        ))}
+        {displayBoats.map((b) => {
+          const flag = "flag" in b && (b as any).flag ? flagEmoji((b as any).flag) + " " : "";
+          return <option key={b.id} value={b.id}>{flag}{b.name}</option>;
+        })}
       </select>
       {activeBoat && (
         <span className="boat-selector-sub">

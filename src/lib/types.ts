@@ -174,6 +174,7 @@ export type Boat = {
   boatType: string | null;
   engineNotes: string | null;
   notes: string | null;
+  flag: string | null;
   ownerIds: string[];
   ownerNames: string[];
 };
