@@ -9,7 +9,8 @@ begin;
 
 insert into public.boats (
   name, identifier, brand_model, boat_type,
-  year_built, flag, registration_number, notes
+  build_year, shipyard, registration_number,
+  engine_notes, notes
 )
 values (
   'REWIND',
@@ -17,26 +18,23 @@ values (
   'Dehler 47',
   'Sailboat',
   2007,
-  'IT',
+  'Dehler',
   'MN3068DX',
-  E'Denominazione: REWIND\n'
-  'Iscrizione ATCN: MN3068DX\n'
+  'Volvo Penta D2-75 · 55 kW / 75 HP · matrícula 5103916758P',
+  E'Iscrizione ATCN: MN3068DX\n'
   'Nominativo internazionale: 108538\n'
   'Codice WIN: DEDEH680391708\n'
-  'Cantiere: Dehler 47\n'
   'Materiale scafo: P.R.F.V.\n'
-  'Lunghezza f.t.: 14.28 m\n'
-  'Larghezza f.f.: 4.20 m\n'
-  'Motore: Volvo Penta D2-75 (55 kW / 75 HP)\n'
-  'Matrícula motor: 5103916758P'
+  'Lunghezza f.t.: 14.28 m · Larghezza f.f.: 4.20 m'
 )
 on conflict (identifier) do update set
-  name              = excluded.name,
-  brand_model       = excluded.brand_model,
-  year_built        = excluded.year_built,
-  flag              = excluded.flag,
+  name                = excluded.name,
+  brand_model         = excluded.brand_model,
+  build_year          = excluded.build_year,
+  shipyard            = excluded.shipyard,
   registration_number = excluded.registration_number,
-  notes             = excluded.notes;
+  engine_notes        = excluded.engine_notes,
+  notes               = excluded.notes;
 
 -- ─── Sistemas ────────────────────────────────────────────────────────────────
 
@@ -125,9 +123,9 @@ select
 from public.boats b
 cross join public.system_catalog s
 cross join (values
-  ('EPIRB — revisión y batería',       'EPIRB — revisión y batería',        'EPIRB — service and battery',    'Revisión periódica del EPIRB y sustitución de batería',               1825),
-  ('Bengalas — renovación',            'Bengalas — renovación',             'Flares — renewal',               'Sustitución de bengalas caducadas',                                   1095),
-  ('Balsa salvavidas — revisión',      'Balsa salvavidas — revisión',       'Life raft — service',            'Revisión anual de la balsa salvavidas en taller homologado',           365)
+  ('EPIRB — revisión y batería',       'EPIRB — revisión y batería',        'EPIRB — service and battery',    'Revisión periódica del EPIRB y sustitución de batería',               1825, 'critical'),
+  ('Bengalas — renovación',            'Bengalas — renovación',             'Flares — renewal',               'Sustitución de bengalas caducadas',                                   1095, 'critical'),
+  ('Balsa salvavidas — revisión',      'Balsa salvavidas — revisión',       'Life raft — service',            'Revisión anual de la balsa salvavidas en taller homologado',           365,  'critical')
 ) as entry(title, title_es, title_en, description, interval_days, priority)
 where b.identifier = 'dehler-47-rewind'
   and s.code = 'safety-equipment'
