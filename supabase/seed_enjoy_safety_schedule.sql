@@ -48,6 +48,20 @@ cross join (values
     'Life raft — service',
     'Revisión anual de la balsa salvavidas en taller homologado',
     365
+  ),
+  (
+    'Botella de buceo 1 — prueba hidrostática',
+    'Botella de buceo 1 — prueba hidrostática',
+    'Diving tank 1 — hydrostatic test',
+    'Prueba hidrostática periódica de la botella de buceo nº 1',
+    1825
+  ),
+  (
+    'Botella de buceo 2 — prueba hidrostática',
+    'Botella de buceo 2 — prueba hidrostática',
+    'Diving tank 2 — hydrostatic test',
+    'Prueba hidrostática periódica de la botella de buceo nº 2',
+    1825
   )
 ) as entry(title, title_es, title_en, description, interval_days)
 where b.identifier = 'moody-425-enjoy'
@@ -72,6 +86,26 @@ where b.identifier = 'moody-425-enjoy'
     'epirb — revisión y batería',
     'bengalas — renovación',
     'balsa salvavidas — revisión'
+  )
+  and not exists (
+    select 1 from public.boat_maintenance_schedule s
+    where s.boat_id = b.id and s.template_id = t.id
+  );
+
+-- Add entries for diving tanks with last done 2024-06-01
+insert into public.boat_maintenance_schedule (boat_id, template_id, interval_days, last_done_at, notes)
+select
+  b.id,
+  t.id,
+  t.interval_days,
+  '2024-06-01'::date,
+  'Última prueba hidrostática: 1 junio 2024'
+from public.boats b
+join public.maintenance_templates t on t.boat_id = b.id
+where b.identifier = 'moody-425-enjoy'
+  and lower(t.title) in (
+    'botella de buceo 1 — prueba hidrostática',
+    'botella de buceo 2 — prueba hidrostática'
   )
   and not exists (
     select 1 from public.boat_maintenance_schedule s
