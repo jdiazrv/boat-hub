@@ -10,7 +10,7 @@ begin;
 insert into public.boats (
   name, identifier, brand_model, boat_type,
   build_year, shipyard, registration_number,
-  engine_notes, notes
+  engine_notes, notes, flag
 )
 values (
   'REWIND',
@@ -25,7 +25,8 @@ values (
   'Nominativo internazionale: 108538\n'
   'Codice WIN: DEDEH680391708\n'
   'Materiale scafo: P.R.F.V.\n'
-  'Lunghezza f.t.: 14.28 m · Larghezza f.f.: 4.20 m'
+  'Lunghezza f.t.: 14.28 m · Larghezza f.f.: 4.20 m',
+  'IT'
 )
 on conflict (identifier) do update set
   name                = excluded.name,
@@ -34,7 +35,8 @@ on conflict (identifier) do update set
   shipyard            = excluded.shipyard,
   registration_number = excluded.registration_number,
   engine_notes        = excluded.engine_notes,
-  notes               = excluded.notes;
+  notes               = excluded.notes,
+  flag                = excluded.flag;
 
 -- ─── Sistemas ────────────────────────────────────────────────────────────────
 

@@ -710,7 +710,7 @@ export async function updateBoat(
   id: string,
   payload: Partial<Omit<Boat, "id" | "ownerIds" | "ownerNames">>
 ) {
-  const { error } = await db()
+  const { data, error } = await db()
     .from("boats")
     .update({
       name: payload.name,
@@ -728,8 +728,11 @@ export async function updateBoat(
       notes: payload.notes,
       flag: payload.flag ?? null,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error("No se pudo actualizar el barco. Revisa los permisos del usuario.");
 }
 
 export async function deleteBoat(id: string) {

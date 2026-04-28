@@ -173,6 +173,7 @@ create table public.boats (
   boat_type text,
   engine_notes text,
   notes text,
+  flag char(2),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -895,8 +896,26 @@ with check (public.is_superuser());
 create policy "Boat managers can update boats"
 on public.boats
 for update
-using (public.has_boat_permission(id, 'edit'))
-with check (public.has_boat_permission(id, 'edit'));
+using (
+  public.has_boat_permission(id, 'edit')
+  or exists (
+    select 1
+    from public.boat_memberships membership
+    where membership.boat_id = boats.id
+      and membership.user_id = auth.uid()
+      and membership.role in ('owner_admin', 'superuser')
+  )
+)
+with check (
+  public.has_boat_permission(id, 'edit')
+  or exists (
+    select 1
+    from public.boat_memberships membership
+    where membership.boat_id = boats.id
+      and membership.user_id = auth.uid()
+      and membership.role in ('owner_admin', 'superuser')
+  )
+);
 
 create policy "Superusers can delete boats"
 on public.boats
