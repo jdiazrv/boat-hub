@@ -1764,7 +1764,7 @@ export async function fetchHourLogs(boatScope?: string | string[]): Promise<Hour
        boats ( name ),
        hour_counters ( name )`
     )
-    .order("logged_at", { ascending: false });
+    .order("value_hours", { ascending: false });
   q = applyBoatScope(q, boatScope);
   const { data, error } = await q;
   if (error) throw error;
