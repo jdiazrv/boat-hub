@@ -898,6 +898,11 @@ for update
 using (public.has_boat_permission(id, 'edit'))
 with check (public.has_boat_permission(id, 'edit'));
 
+create policy "Superusers can delete boats"
+on public.boats
+for delete
+using (public.is_superuser());
+
 create policy "Boat managers can read owner links"
 on public.owner_boats
 for select

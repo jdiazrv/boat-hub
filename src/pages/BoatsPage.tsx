@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as db from "../lib/db";
-import type { Boat } from "../lib/types";
+import type { Boat, SchedulePlan } from "../lib/types";
 import { FormActions, FormGrid, FormSection, InputField, SelectField, TextareaField } from "../components/FormField";
 import { Modal } from "../components/Modal";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { useAppData } from "../providers/AppDataProvider";
+import { useAuth } from "../providers/AuthProvider";
 
 const EMPTY_BOAT: Omit<Boat, "id" | "ownerIds" | "ownerNames"> = {
   name: "",
@@ -22,8 +23,7 @@ const EMPTY_BOAT: Omit<Boat, "id" | "ownerIds" | "ownerNames"> = {
 
 function BoatForm({
   initial,
-  ownerIds: initialOwnerIds,
-  owners,
+  schedulePlans,
   onSave,
   onDelete,
   onCancel,
@@ -31,31 +31,37 @@ function BoatForm({
   error,
 }: {
   initial: Omit<Boat, "id" | "ownerIds" | "ownerNames">;
-  ownerIds: string[];
-  owners: { id: string; name: string }[];
-  onSave: (data: Omit<Boat, "id" | "ownerIds" | "ownerNames">, ownerIds: string[]) => void;
+  schedulePlans: SchedulePlan[];
+  onSave: (data: Omit<Boat, "id" | "ownerIds" | "ownerNames">, schedulePlanId: string | null) => void;
   onDelete?: () => void;
   onCancel: () => void;
   loading: boolean;
   error: string | null;
 }) {
   const [form, setForm] = useState(initial);
-  const [selectedOwners, setSelectedOwners] = useState<string[]>(initialOwnerIds);
-  const { t } = useI18n();
+  const [schedulePlanId, setSchedulePlanId] = useState("");
+  const { t, locale } = useI18n();
 
   function set(field: keyof typeof form, value: string | number | null) {
     setForm((prev) => ({ ...prev, [field]: value === "" ? null : value }));
   }
 
-  function toggleOwner(id: string) {
-    setSelectedOwners((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSave(form, selectedOwners);
+    onSave(form, schedulePlanId || null);
+  }
+
+  function engineNameFromPlan(plan: SchedulePlan) {
+    const label = locale === "es" ? plan.nameEs : plan.nameEn;
+    return label.replace(/\s+—\s+.*$/, "").trim();
+  }
+
+  function handleSchedulePlanChange(planId: string) {
+    setSchedulePlanId(planId);
+    const plan = schedulePlans.find((p) => p.id === planId);
+    if (plan) {
+      setForm((prev) => ({ ...prev, propulsion: engineNameFromPlan(plan) }));
+    }
   }
 
   return (
@@ -69,6 +75,14 @@ function BoatForm({
           <InputField label="Año de construcción" type="number" value={form.buildYear ?? ""} onChange={(e) => set("buildYear", e.target.value ? Number(e.target.value) : null)} />
           <InputField label="Astillero" value={form.shipyard ?? ""} onChange={(e) => set("shipyard", e.target.value)} />
           <InputField label="Propulsión / Motor" value={form.propulsion ?? ""} onChange={(e) => set("propulsion", e.target.value)} />
+          <SelectField label="Motor / plan de seguimiento" value={schedulePlanId} onChange={(e) => handleSchedulePlanChange(e.target.value)}>
+            <option value="">No cargar plan de motor</option>
+            {schedulePlans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {locale === "es" ? plan.nameEs : plan.nameEn}
+              </option>
+            ))}
+          </SelectField>
           <SelectField label="Tipo de barco" value={form.boatType ?? ""} onChange={(e) => set("boatType", e.target.value)}>
             <option value="">-- Selecciona --</option>
             <option value="Sailboat">Velero</option>
@@ -82,23 +96,6 @@ function BoatForm({
         <TextareaField label="Notas motor" value={form.engineNotes ?? ""} onChange={(e) => set("engineNotes", e.target.value)} />
         <TextareaField label={t("notes")} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} />
       </FormSection>
-
-      {owners.length > 0 && (
-        <FormSection title="Armadores">
-          <div className="form-checkbox-grid">
-            {owners.map((o) => (
-              <label key={o.id} className="form-checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={selectedOwners.includes(o.id)}
-                  onChange={() => toggleOwner(o.id)}
-                />
-                <span>{o.name}</span>
-              </label>
-            ))}
-          </div>
-        </FormSection>
-      )}
 
       {error && <p className="form-error">{error}</p>}
 
@@ -115,13 +112,20 @@ function BoatForm({
 
 export function BoatsPage() {
   const { t } = useI18n();
-  const { boats, allBoats, owners, refresh, loading } = useAppData();
+  const { session } = useAuth();
+  const { boats, allBoats, refresh, loading } = useAppData();
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<Boat | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [schedulePlans, setSchedulePlans] = useState<SchedulePlan[]>([]);
 
   const displayBoats = isSupabaseConfigured ? allBoats : boats;
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    db.fetchSchedulePlans().then(setSchedulePlans).catch(() => setSchedulePlans([]));
+  }, []);
 
   function openCreate() {
     setEditing(null);
@@ -140,17 +144,19 @@ export function BoatsPage() {
     setEditing(null);
   }
 
-  async function handleSave(
-    data: Omit<Boat, "id" | "ownerIds" | "ownerNames">,
-    ownerIds: string[]
-  ) {
+  async function handleSave(data: Omit<Boat, "id" | "ownerIds" | "ownerNames">, schedulePlanId: string | null) {
     setSaving(true);
     setError(null);
     try {
+      let boatId = editing?.id;
       if (editing) {
-        await db.updateBoat(editing.id, data, ownerIds);
+        await db.updateBoat(editing.id, data);
       } else {
-        await db.createBoat(data, ownerIds);
+        const created = await db.createBoat(data);
+        boatId = created.id;
+      }
+      if (schedulePlanId && boatId) {
+        await db.applySchedulePlanToBoat(schedulePlanId, boatId);
       }
       await refresh();
       closeModal();
@@ -183,7 +189,7 @@ export function BoatsPage() {
           <span className="eyebrow">{t("boats")}</span>
           <h2>Flota — contexto operativo por barco</h2>
         </div>
-        {isSupabaseConfigured && (
+        {isSupabaseConfigured && session && (
           <button className="btn-primary" onClick={openCreate} type="button">
             + {t("newBoat")}
           </button>
@@ -201,7 +207,7 @@ export function BoatsPage() {
                 <h3>{"name" in boat ? (boat as Boat).name : (boat as typeof boats[0]).name}</h3>
                 <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                   <span className="pill">{("boatType" in boat ? (boat as Boat).boatType : (boat as typeof boats[0]).type) ?? "Boat"}</span>
-                  {isSupabaseConfigured && full && (
+                  {isSupabaseConfigured && session && full && (
                     <button className="btn-icon" onClick={() => openEdit(full)} type="button" title="Editar">✏</button>
                   )}
                 </div>
@@ -210,14 +216,6 @@ export function BoatsPage() {
                 Matrícula: {("registrationNumber" in boat ? (boat as Boat).registrationNumber : (boat as typeof boats[0]).registrationNumber) ?? "-"}
               </p>
               <div className="detail-grid">
-                <div>
-                  <span>{t("owners")}</span>
-                  <strong>
-                    {("ownerNames" in boat
-                      ? (boat as Boat).ownerNames.join(", ")
-                      : (boat as typeof boats[0]).owners.join(", ")) || "-"}
-                  </strong>
-                </div>
                 <div>
                   <span>{t("nextHaulOut")}</span>
                   <strong>{("nextHaulOut" in boat ? (boat as typeof boats[0]).nextHaulOut : null) ?? "-"}</strong>
@@ -279,8 +277,7 @@ export function BoatsPage() {
                   }
                 : EMPTY_BOAT
             }
-            ownerIds={editing?.ownerIds ?? []}
-            owners={owners}
+            schedulePlans={schedulePlans}
             onSave={handleSave}
             onDelete={editing ? handleDelete : undefined}
             onCancel={closeModal}

@@ -60,13 +60,9 @@ export async function isCurrentUserSuperuser(userId: string) {
     .from("user_profiles")
     .select("is_superuser")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
-
-  if (data?.is_superuser) {
+  if (!error && data?.is_superuser) {
     return true;
   }
 

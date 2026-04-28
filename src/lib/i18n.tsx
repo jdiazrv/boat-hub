@@ -8,6 +8,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     appName: "Boat Maintenance Hub",
     // Nav groups
     navGroupFleet: "Flota",
+    navGroupDaily: "Dia a dia",
     navGroupMaintenance: "Mantenimiento",
     navGroupPlanning: "Planificacion",
     navGroupResources: "Recursos",
@@ -18,10 +19,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     // Nav
     dashboard: "Panel",
     boats: "Barcos",
-    owners: "Armadores",
     systems: "Sistemas",
     maintenance: "Mantenimiento",
-    preventive: "Preventivos",
+    preventive: "Periodicos",
     haulOuts: "Varadas",
     observations: "Observaciones",
     futureActions: "Acciones futuras",
@@ -34,6 +34,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     shipyards: "Varaderos",
     adminUsers: "Usuarios",
     adminMaintenanceTemplates: "Catalogo mantenimiento",
+    hourCounters: "Contadores de horas",
     adminPreventiveTemplates: "Catalogo preventivos",
     adminSystemCatalog: "Catalogo sistemas",
     maintenanceSchedule: "Plan de mantenimiento",
@@ -75,7 +76,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     openTasks: "Pendientes",
     upcomingActions: "Acciones inmediatas",
     maintenanceBoard: "Tablero de mantenimiento",
-    preventiveBoard: "Rutinas preventivas",
+    preventiveBoard: "Mantenimiento periodico",
     inventoryBoard: "Control de repuestos",
     // Auth
     signIn: "Entrar",
@@ -233,6 +234,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     appName: "Boat Maintenance Hub",
     // Nav groups
     navGroupFleet: "Fleet",
+    navGroupDaily: "Day to day",
     navGroupMaintenance: "Maintenance",
     navGroupPlanning: "Planning",
     navGroupResources: "Resources",
@@ -243,10 +245,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     // Nav
     dashboard: "Dashboard",
     boats: "Boats",
-    owners: "Owners",
     systems: "Systems",
     maintenance: "Maintenance",
-    preventive: "Preventive",
+    preventive: "Periodic",
     haulOuts: "Haul-outs",
     observations: "Observations",
     futureActions: "Future actions",
@@ -259,6 +260,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     shipyards: "Shipyards",
     adminUsers: "Users",
     adminMaintenanceTemplates: "Maintenance catalog",
+    hourCounters: "Hour counters",
     adminPreventiveTemplates: "Preventive catalog",
     adminSystemCatalog: "System catalog",
     maintenanceSchedule: "Maintenance schedule",
@@ -300,7 +302,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     openTasks: "Open tasks",
     upcomingActions: "Immediate actions",
     maintenanceBoard: "Maintenance board",
-    preventiveBoard: "Preventive routines",
+    preventiveBoard: "Periodic maintenance",
     inventoryBoard: "Spare parts control",
     // Auth
     signIn: "Sign in",

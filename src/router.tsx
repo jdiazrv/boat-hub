@@ -10,12 +10,12 @@ import { FuelPage } from "./pages/FuelPage";
 import { FutureActionsPage } from "./pages/FutureActionsPage";
 import { HaulOutsPage } from "./pages/HaulOutsPage";
 import { HoursPage } from "./pages/HoursPage";
+import { HourCountersPage } from "./pages/HourCountersPage";
 import { InventoryCatalogPage } from "./pages/InventoryCatalogPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { MaintenancePage } from "./pages/MaintenancePage";
 import { MarinasPage } from "./pages/MarinasPage";
 import { ObservationsPage } from "./pages/ObservationsPage";
-import { OwnersPage } from "./pages/OwnersPage";
 import { PreventivePage } from "./pages/PreventivePage";
 import { PurchasesPage } from "./pages/PurchasesPage";
 import { SchedulePage } from "./pages/SchedulePage";
@@ -29,7 +29,6 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "boats", element: <BoatsPage /> },
-      { path: "owners", element: <OwnersPage /> },
       { path: "systems", element: <BoatSystemsPage /> },
       { path: "maintenance", element: <MaintenancePage /> },
       { path: "preventive", element: <PreventivePage /> },
@@ -40,6 +39,7 @@ export const router = createBrowserRouter([
       { path: "inventory", element: <InventoryPage /> },
       { path: "inventory-catalog", element: <InventoryCatalogPage /> },
       { path: "hours", element: <HoursPage /> },
+      { path: "hour-counters", element: <HourCountersPage /> },
       { path: "fuel", element: <FuelPage /> },
       { path: "marinas", element: <MarinasPage /> },
       { path: "shipyards", element: <ShipyardsPage /> },

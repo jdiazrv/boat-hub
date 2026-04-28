@@ -275,6 +275,73 @@ function worksheetXml<T>(rows: T[], columns: Column<T>[]) {
 </worksheet>`;
 }
 
+function coverWorksheetXml(boat: Boat | null, exportDate: string, includeDrawing: boolean) {
+  const boatName = boat?.name ?? "Todos los barcos";
+  const boatType = boat?.boatType ?? "";
+  const brandModel = boat?.brandModel ?? "";
+  const buildYear = boat?.buildYear != null ? String(boat.buildYear) : "";
+  const propulsion = boat?.propulsion ?? "";
+  const regNumber = boat?.registrationNumber ?? "";
+
+  const cell = (ref: string, style: number, value?: string | number) => {
+    if (value == null || value === "") return `<c r="${ref}" s="${style}" t="n"></c>`;
+    if (typeof value === "number") return `<c r="${ref}" s="${style}"><v>${value}</v></c>`;
+    return `<c r="${ref}" s="${style}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+  };
+  const emptyRow = (row: number) => `<row r="${row}">${["A", "B", "C", "D", "E", "F", "G", "H", "I"].map((col) => cell(`${col}${row}`, 1)).join("")}</row>`;
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetPr><outlinePr summaryBelow="1" summaryRight="1"/><pageSetUpPr/></sheetPr>
+  <dimension ref="A1:I35"/>
+  <sheetViews><sheetView workbookViewId="0"><selection activeCell="A1" sqref="A1"/></sheetView></sheetViews>
+  <sheetFormatPr baseColWidth="8" defaultRowHeight="15"/>
+  <cols>
+    <col width="4" customWidth="1" min="1" max="1"/>
+    <col width="20" customWidth="1" min="2" max="2"/>
+    <col width="20" customWidth="1" min="3" max="3"/>
+    <col width="20" customWidth="1" min="4" max="4"/>
+    <col width="20" customWidth="1" min="5" max="5"/>
+    <col width="20" customWidth="1" min="6" max="6"/>
+    <col width="20" customWidth="1" min="7" max="7"/>
+    <col width="20" customWidth="1" min="8" max="8"/>
+    <col width="4" customWidth="1" min="9" max="9"/>
+  </cols>
+  <sheetData>
+    ${emptyRow(1)}
+    <row r="2">${cell("A2", 1)}${cell("B2", 2, boatName.toUpperCase())}${cell("I2", 1)}</row>
+    <row r="3">${cell("A3", 1)}${cell("I3", 1)}</row>
+    <row r="4">${cell("A4", 1)}${cell("B4", 3, "INFORME DE GESTIÓN NAVAL")}${cell("I4", 1)}</row>
+    ${emptyRow(5)}
+    <row r="6">${cell("A6", 1)}${cell("B6", 1)}${cell("C6", 1)}${cell("D6", 4, `Exportado el ${exportDate}`)}${cell("G6", 1)}${cell("H6", 1)}${cell("I6", 1)}</row>
+    ${emptyRow(7)}
+    <row r="8">${cell("A8", 1)}${cell("B8", 5, "INFORMACIÓN GENERAL")}${cell("F8", 5, "PROPULSIÓN")}${cell("I8", 1)}</row>
+    ${emptyRow(9)}
+    <row r="10">${cell("A10", 1)}${cell("B10", 6, "Tipo")}${cell("C10", 1, boatType)}${cell("F10", 6, "Motor")}${cell("G10", 1, propulsion)}${cell("I10", 1)}</row>
+    ${emptyRow(11)}
+    <row r="12">${cell("A12", 1)}${cell("B12", 6, "Marca / Modelo")}${cell("C12", 1, brandModel)}${cell("F12", 6, "Matrícula")}${cell("G12", 1, regNumber)}${cell("I12", 1)}</row>
+    ${emptyRow(13)}
+    <row r="14">${cell("A14", 1)}${cell("B14", 6, "Año")}${cell("C14", 1, buildYear)}${cell("F14", 1)}${cell("G14", 1)}${cell("H14", 1)}${cell("I14", 1)}</row>
+    ${emptyRow(15)}
+    <row r="16">${cell("A16", 1)}${cell("B16", 6)}${cell("C16", 1)}${cell("F16", 1)}${cell("G16", 1)}${cell("H16", 1)}${cell("I16", 1)}</row>
+    ${emptyRow(17)}
+    <row r="18">${cell("A18", 1)}${cell("B18", 7)}${cell("I18", 1)}</row>
+    ${emptyRow(19)}
+    <row r="20">${cell("A20", 1)}${cell("B20", 8)}${cell("I20", 1)}</row>
+    <row r="21">${cell("A21", 1)}${cell("I21", 1)}</row>
+    <row r="22">${cell("A22", 1)}${cell("I22", 1)}</row>
+    ${Array.from({ length: 13 }, (_, index) => emptyRow(index + 23)).join("")}
+  </sheetData>
+  <mergeCells count="13">
+    <mergeCell ref="C16:E16"/><mergeCell ref="G12:H12"/><mergeCell ref="B8:E8"/><mergeCell ref="C14:E14"/>
+    <mergeCell ref="B18:H18"/><mergeCell ref="B4:H4"/><mergeCell ref="G10:H10"/><mergeCell ref="F8:H8"/>
+    <mergeCell ref="B20:H22"/><mergeCell ref="B2:H3"/><mergeCell ref="D6:F6"/><mergeCell ref="C12:E12"/><mergeCell ref="C10:E10"/>
+  </mergeCells>
+  <pageMargins left="0.75" right="0.75" top="1" bottom="1" header="0.5" footer="0.5"/>
+  ${includeDrawing ? '<drawing xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/>' : ""}
+</worksheet>`;
+}
+
 function sanitizeSheetName(name: string) {
   return name.replace(/[\[\]:*?/\\]/g, " ").slice(0, 31) || "Hoja";
 }
@@ -404,12 +471,32 @@ function writeZip(entries: ZipEntry[]) {
   return new Uint8Array(out);
 }
 
-function withAddedSheets(entries: ZipEntry[], sections: { sheetName: string; xml: string }[]) {
-  const skipped = new Set(["xl/workbook.xml", "xl/_rels/workbook.xml.rels", "[Content_Types].xml"]);
+function hasCoverDrawing(entries: ZipEntry[]) {
+  return entries.some((entry) => entry.name === "xl/worksheets/_rels/sheet1.xml.rels")
+    && entries.some((entry) => entry.name === "xl/drawings/drawing1.xml");
+}
+
+function contentTypesXml(includeDrawing: boolean, includeSharedStrings: boolean) {
+  let xml = includeDrawing
+    ? BASE_CONTENT_TYPES_XML
+    : BASE_CONTENT_TYPES_XML
+    .replace('<Default Extension="jpeg" ContentType="image/jpeg"/>', "")
+    .replace('<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>', "");
+  if (includeSharedStrings) {
+    xml = xml.replace(
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>',
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>',
+    );
+  }
+  return xml;
+}
+
+function withAddedSheets(entries: ZipEntry[], sections: { sheetName: string; xml: string }[], coverXml: string, coverSheetName: string, includeDrawing: boolean) {
+  const skipped = new Set(["xl/workbook.xml", "xl/_rels/workbook.xml.rels", "[Content_Types].xml", "xl/worksheets/sheet1.xml"]);
   const nextEntries = entries.filter((entry) => !skipped.has(entry.name));
-  let workbook = BASE_WORKBOOK_XML;
+  let workbook = BASE_WORKBOOK_XML.replace('name="ALDEBARAN"', `name="${escapeXml(sanitizeSheetName(coverSheetName))}"`);
   let rels = BASE_RELS_XML;
-  let contentTypes = BASE_CONTENT_TYPES_XML;
+  let contentTypes = contentTypesXml(includeDrawing, entries.some((entry) => entry.name === "xl/sharedStrings.xml"));
   const sheetIdStart = 2;
   const relIdStart = 4;
 
@@ -423,6 +510,7 @@ function withAddedSheets(entries: ZipEntry[], sections: { sheetName: string; xml
     nextEntries.push(textEntry(sheetPath, section.xml));
   });
 
+  nextEntries.push(textEntry("xl/worksheets/sheet1.xml", coverXml));
   nextEntries.push(textEntry("xl/workbook.xml", workbook));
   nextEntries.push(textEntry("xl/_rels/workbook.xml.rels", rels));
   nextEntries.push(textEntry("[Content_Types].xml", contentTypes));
@@ -432,7 +520,7 @@ function withAddedSheets(entries: ZipEntry[], sections: { sheetName: string; xml
 export async function exportAllToExcel(
   boatName: string,
   data: ExportExcelData,
-  _boat: Boat | null = null,
+  boat: Boat | null = null,
   selection?: ExportSectionSelection,
 ) {
   const includes = (key: ExportSectionKey) => selection?.[key] ?? true;
@@ -446,7 +534,15 @@ export async function exportAllToExcel(
   if (!response.ok) throw new Error("No se pudo cargar la plantilla Excel");
   const templateBytes = new Uint8Array(await response.arrayBuffer());
   const entries = parseZip(templateBytes);
-  const output = writeZip(withAddedSheets(entries, sections));
+  const exportDate = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+  const includeDrawing = hasCoverDrawing(entries);
+  const output = writeZip(withAddedSheets(
+    entries,
+    sections,
+    coverWorksheetXml(boat, exportDate, includeDrawing),
+    boat?.name ?? boatName,
+    includeDrawing,
+  ));
   const blob = new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const date = new Date().toISOString().slice(0, 10);
   const safeName = boatName.replace(/[^a-zA-Z0-9_\-]/g, "_");

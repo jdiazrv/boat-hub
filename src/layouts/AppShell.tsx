@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { exportAllToExcel } from "../lib/exportExcel";
@@ -11,7 +11,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { useAppData } from "../providers/AppDataProvider";
 
 type NavItem = { to: string; key: string; exact?: boolean; superuserOnly?: boolean; multiBoatOnly?: boolean; requiresBoat?: boolean };
-type NavGroup = { label: string; boatScoped: boolean; superuserOnly?: boolean; links: NavItem[] };
+type NavGroupDef = { label: string | null; boatScoped: boolean; superuserOnly?: boolean; collapsible?: boolean; links: NavItem[] };
 type ExportKind = "excel" | "html";
 type ExportSectionKey =
   | "maintenanceTasks"
@@ -39,84 +39,65 @@ const EXPORT_SECTIONS: { key: ExportSectionKey; label: string }[] = [
 ];
 
 function createExportSelection() {
-  return EXPORT_SECTIONS.reduce((selection, section) => {
-    selection[section.key] = true;
-    return selection;
-  }, {} as Record<ExportSectionKey, boolean>);
+  return EXPORT_SECTIONS.reduce((sel, s) => { sel[s.key] = true; return sel; }, {} as Record<ExportSectionKey, boolean>);
 }
 
-const NAV_GROUPS: NavGroup[] = [
+// label: null = sin cabecera (ítems directos sin grupo visual)
+const NAV_GROUPS: NavGroupDef[] = [
   {
-    label: "navGroupFleet",
+    label: null,
     boatScoped: false,
     links: [
       { to: "/", key: "dashboard", exact: true },
-      { to: "/boats", key: "boats", multiBoatOnly: true },
+      { to: "/boats", key: "boats" },
     ],
   },
   {
-    label: "navGroupMaintenance",
+    label: "navGroupDaily",
     boatScoped: true,
+    collapsible: true,
     links: [
       { to: "/maintenance", key: "maintenance" },
-      { to: "/preventive", key: "preventive" },
       { to: "/observations", key: "observations" },
-      { to: "/haul-outs", key: "haulOuts" },
-    ],
-  },
-  {
-    label: "navGroupPlanning",
-    boatScoped: true,
-    links: [
-      { to: "/future-actions", key: "futureActions" },
-      { to: "/purchases", key: "purchases" },
-    ],
-  },
-  {
-    label: "navGroupResources",
-    boatScoped: true,
-    links: [
       { to: "/inventory", key: "inventory" },
       { to: "/hours", key: "hours" },
       { to: "/fuel", key: "fuel" },
     ],
   },
   {
+    label: "navGroupPlanning",
+    boatScoped: true,
+    collapsible: true,
+    links: [
+      { to: "/preventive", key: "preventive" },
+      { to: "/haul-outs", key: "haulOuts" },
+      { to: "/future-actions", key: "futureActions" },
+      { to: "/purchases", key: "purchases" },
+    ],
+  },
+  {
     label: "navGroupDirectories",
     boatScoped: false,
+    collapsible: true,
     links: [
       { to: "/marinas", key: "marinas" },
       { to: "/shipyards", key: "shipyards" },
     ],
   },
-  {
-    label: "navGroupConfig",
-    boatScoped: false,
-    links: [
-      { to: "/systems", key: "systems" },
-      { to: "/admin/maintenance-templates", key: "adminMaintenanceTemplates", requiresBoat: true },
-      { to: "/inventory-catalog", key: "inventoryCatalog", requiresBoat: true },
-    ],
-  },
-  {
-    label: "navGroupAdmin",
-    boatScoped: false,
-    superuserOnly: true,
-    links: [
-      { to: "/owners", key: "owners" },
-      { to: "/admin/users", key: "adminUsers" },
-      { to: "/admin/system-catalog", key: "adminSystemCatalog" },
-    ],
-  },
-  {
-    label: "navGroupSettings",
-    boatScoped: false,
-    links: [
-      { to: "/settings", key: "settings" },
-    ],
-  },
 ];
 
+const CONFIG_LINKS: NavItem[] = [
+  { to: "/systems", key: "systems" },
+  { to: "/admin/maintenance-templates", key: "adminMaintenanceTemplates", requiresBoat: true },
+  { to: "/hour-counters", key: "hourCounters", requiresBoat: true },
+  { to: "/inventory-catalog", key: "inventoryCatalog", requiresBoat: true },
+];
+const ADMIN_LINKS: NavItem[] = [
+  { to: "/admin/users", key: "adminUsers" },
+  { to: "/admin/system-catalog", key: "adminSystemCatalog" },
+];
+
+// ── BoatSelector ──────────────────────────────────────────────────────────────
 function BoatSelector() {
   const { boats, allBoats } = useAppData();
   const { activeBoatId, setActiveBoatId, activeBoat } = useActiveBoat();
@@ -133,9 +114,7 @@ function BoatSelector() {
         onChange={(e) => setActiveBoatId(e.target.value || null)}
       >
         {displayBoats.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
+          <option key={b.id} value={b.id}>{b.name}</option>
         ))}
       </select>
       {activeBoat && (
@@ -149,14 +128,54 @@ function BoatSelector() {
   );
 }
 
-function NavGroup({
-  group,
-  isSuperuser,
-  boatCount,
-  activeBoatId,
-  onNav,
-}: {
-  group: NavGroup;
+// ── NavLinks ──────────────────────────────────────────────────────────────────
+function NavLinks({ links, onNav }: { links: NavItem[]; onNav: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="nav-group-links">
+      {links.map((link) => (
+        <NavLink
+          key={link.to}
+          to={link.to}
+          end={link.exact}
+          className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+          onClick={onNav}
+        >
+          {t(link.key)}
+        </NavLink>
+      ))}
+    </div>
+  );
+}
+
+function CollapsibleGroup({ label, links, onNav }: {
+  label: string;
+  links: NavItem[];
+  onNav: () => void;
+}) {
+  const location = useLocation();
+  const hasActive = links.some((l) =>
+    l.exact ? location.pathname === l.to : location.pathname.startsWith(l.to)
+  );
+  const [open, setOpen] = useState(hasActive);
+
+  return (
+    <div className="nav-group">
+      <button
+        className={`nav-group-toggle${hasActive ? " has-active" : ""}`}
+        onClick={() => setOpen((v) => !v)}
+        type="button"
+      >
+        {label}
+        <span className={`nav-chevron${open ? " open" : ""}`}>›</span>
+      </button>
+      {open && <NavLinks links={links} onNav={onNav} />}
+    </div>
+  );
+}
+
+function NavGroupBlock({ group, isSuperuser, boatCount, activeBoatId, onNav }: {
+  group: NavGroupDef;
   isSuperuser: boolean;
   boatCount: number;
   activeBoatId: string | null;
@@ -175,34 +194,77 @@ function NavGroup({
   if (group.boatScoped && !activeBoatId) return null;
   if (group.superuserOnly && !isSuperuser) return null;
 
+  if (!group.label) {
+    return <div className="nav-group"><NavLinks links={visibleLinks} onNav={onNav} /></div>;
+  }
+
+  if (group.collapsible) {
+    return <CollapsibleGroup label={t(group.label)} links={visibleLinks} onNav={onNav} />;
+  }
+
   return (
     <div className="nav-group">
       <span className="nav-group-label">{t(group.label)}</span>
-      <div className="nav-group-links">
-        {visibleLinks.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            end={link.exact}
-            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-            onClick={onNav}
-          >
-            {t(link.key)}
-          </NavLink>
-        ))}
+      <NavLinks links={visibleLinks} onNav={onNav} />
+    </div>
+  );
+}
+
+// ── Config popover ────────────────────────────────────────────────────────────
+function ConfigPopover({ isSuperuser, activeBoatId, onNav, onClose, onExport }: {
+  isSuperuser: boolean;
+  activeBoatId: string | null;
+  onNav: () => void;
+  onClose: () => void;
+  onExport: (kind: ExportKind) => void;
+}) {
+  const { t } = useI18n();
+  const configLinks = CONFIG_LINKS.filter((l) => !l.requiresBoat || activeBoatId);
+  const adminLinks  = isSuperuser ? ADMIN_LINKS : [];
+  function handleNav() { onNav(); onClose(); }
+
+  return (
+    <div className="config-popover">
+      <div className="nav-group">
+        <span className="nav-group-label">{t("navGroupConfig")}</span>
+        <NavLinks links={configLinks} onNav={handleNav} />
+      </div>
+      {adminLinks.length > 0 && (
+        <div className="nav-group" style={{ marginTop: "0.5rem" }}>
+          <span className="nav-group-label">{t("navGroupAdmin")}</span>
+          <NavLinks links={adminLinks} onNav={handleNav} />
+        </div>
+      )}
+      <div className="nav-group" style={{ marginTop: "0.5rem" }}>
+        <NavLinks links={[{ to: "/settings", key: "settings" }]} onNav={handleNav} />
+      </div>
+      <div className="nav-group" style={{ marginTop: "0.5rem" }}>
+        <span className="nav-group-label">Exportar</span>
+        <div className="nav-group-links">
+          <button className="nav-link" style={{ textAlign: "left", background: "none", border: "1px solid transparent", width: "100%" }} type="button"
+            onClick={() => { onExport("excel"); onClose(); }}>
+            ↓ Excel
+          </button>
+          <button className="nav-link" style={{ textAlign: "left", background: "none", border: "1px solid transparent", width: "100%" }} type="button"
+            onClick={() => { onExport("html"); onClose(); }}>
+            ↓ HTML
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
+// ── SidebarContent ────────────────────────────────────────────────────────────
 function SidebarContent({ onNav }: { onNav: () => void }) {
   const { t } = useI18n();
-  const { session, signOut, isSuperuser } = useAuth();
+  const { session, signOut, isSuperuser, permissionLevel } = useAuth();
   const { activeBoatId, activeBoat } = useActiveBoat();
   const { boats, allBoats, maintenanceTasksFull, haulOuts, observations, futureActions, futurePurchases, inventoryItemsFull, hourLogs, fuelLogs, marinas, shipyards } = useAppData();
   const boatCount = (isSupabaseConfigured ? allBoats : boats).length;
   const [exportKind, setExportKind] = useState<ExportKind | null>(null);
   const [exportSelection, setExportSelection] = useState(createExportSelection);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const exportData = {
     maintenanceTasks: maintenanceTasksFull,
@@ -235,7 +297,7 @@ function SidebarContent({ onNav }: { onNav: () => void }) {
     setExportSelection((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const selectedSectionCount = EXPORT_SECTIONS.filter((section) => exportSelection[section.key]).length;
+  const selectedSectionCount = EXPORT_SECTIONS.filter((s) => exportSelection[s.key]).length;
 
   return (
     <>
@@ -247,9 +309,9 @@ function SidebarContent({ onNav }: { onNav: () => void }) {
       <BoatSelector />
 
       <nav className="nav-links">
-        {NAV_GROUPS.map((group) => (
-          <NavGroup
-            key={group.label}
+        {NAV_GROUPS.map((group, i) => (
+          <NavGroupBlock
+            key={group.label ?? `unlabelled-${i}`}
             group={group}
             isSuperuser={isSuperuser}
             boatCount={boatCount}
@@ -260,38 +322,41 @@ function SidebarContent({ onNav }: { onNav: () => void }) {
       </nav>
 
       <div className="sidebar-footer">
-        <button
-          className="ghost-button"
-          onClick={() => openExport("excel")}
-          type="button"
-          style={{ width: "100%", textAlign: "left", marginBottom: "0.5rem", fontSize: "0.82rem", opacity: 0.75 }}
-          title="Elegir secciones y exportar a Excel"
-        >
-          ↓ Exportar Excel
-        </button>
-        <button
-          className="ghost-button"
-          onClick={() => openExport("html")}
-          type="button"
-          style={{ width: "100%", textAlign: "left", marginBottom: "0.5rem", fontSize: "0.82rem", opacity: 0.75 }}
-          title="Elegir secciones y exportar a HTML"
-        >
-          ↓ Exportar HTML
-        </button>
-        <div className="session-panel">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span className={`pill ${isSupabaseConfigured ? "online" : "demo"}`}>
-              {isSupabaseConfigured ? t("connected") : t("demo")}
-            </span>
-            <span style={{ fontSize: "0.78rem", opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {session?.user.email ?? "demo@boat-hub.local"}
-            </span>
-          </div>
-          {session && (
-            <button className="ghost-button" onClick={() => void signOut()} type="button">
-              {t("signOut")}
-            </button>
+        <div style={{ position: "relative" }}>
+          {configOpen && (
+            <ConfigPopover
+              isSuperuser={isSuperuser}
+              activeBoatId={activeBoatId}
+              onNav={onNav}
+              onClose={() => setConfigOpen(false)}
+              onExport={openExport}
+            />
           )}
+          <div className="session-panel">
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem", minWidth: 0 }}>
+              <span style={{ fontSize: "0.78rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {session?.user.email ?? "demo@boat-hub.local"}
+              </span>
+              <span style={{ fontSize: "0.72rem", opacity: 0.6 }}>
+                {isSuperuser ? "superuser" : (permissionLevel ?? "—")}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+              <button
+                className="ghost-button"
+                style={{ fontSize: "0.8rem", opacity: 0.75 }}
+                onClick={() => setConfigOpen((v) => !v)}
+                type="button"
+              >
+                {t("navGroupConfig")}
+              </button>
+              {session && (
+                <button className="ghost-button" onClick={() => void signOut()} type="button">
+                  {t("signOut")}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -312,9 +377,7 @@ function SidebarContent({ onNav }: { onNav: () => void }) {
               ))}
             </div>
             <div className="form-actions">
-              <button className="btn-ghost" type="button" onClick={() => setExportKind(null)}>
-                Cancelar
-              </button>
+              <button className="btn-ghost" type="button" onClick={() => setExportKind(null)}>Cancelar</button>
               <button className="btn-primary" type="button" onClick={runExport} disabled={selectedSectionCount === 0}>
                 Exportar {selectedSectionCount} sección{selectedSectionCount === 1 ? "" : "es"}
               </button>
@@ -326,6 +389,7 @@ function SidebarContent({ onNav }: { onNav: () => void }) {
   );
 }
 
+// ── AppShell ──────────────────────────────────────────────────────────────────
 function AppShellInner() {
   const [navOpen, setNavOpen] = useState(false);
 
@@ -334,7 +398,6 @@ function AppShellInner() {
       <aside className={`sidebar${navOpen ? " sidebar-open" : ""}`}>
         <SidebarContent onNav={() => setNavOpen(false)} />
       </aside>
-
       <main className="content-panel">
         <button
           className="mobile-nav-toggle"

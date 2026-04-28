@@ -303,6 +303,7 @@ export function MaintenancePage() {
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
+  const [filterKind, setFilterKind] = useState("");
   const [filterSystem, setFilterSystem] = useState("");
   const [filterScheduled, setFilterScheduled] = useState(false);
   const [filterSearch, setFilterSearch] = useState("");
@@ -329,6 +330,7 @@ export function MaintenancePage() {
       if (activeBoatId && task.boatId !== activeBoatId) return false;
       if (filterStatus && task.status !== filterStatus) return false;
       if (filterPriority && task.priority !== filterPriority) return false;
+      if (filterKind && task.kind !== filterKind) return false;
       if (filterSystem && task.boatSystemId !== filterSystem) return false;
       if (filterScheduled && !(task.dueDate && task.dueDate >= today && (task.status === "planned" || task.status === "pending"))) return false;
       if (filterSearch) {
@@ -357,7 +359,7 @@ export function MaintenancePage() {
       return 0;
     });
     return list;
-  }, [tasks, activeBoatId, filterStatus, filterPriority, filterSystem, filterScheduled, filterSearch, sortBy, sortDir, today]);
+  }, [tasks, activeBoatId, filterStatus, filterPriority, filterKind, filterSystem, filterScheduled, filterSearch, sortBy, sortDir, today]);
 
   useEffect(() => {
     if (!activeBoatId) return;
@@ -486,6 +488,10 @@ export function MaintenancePage() {
         <select className="form-input form-select" value={filterSystem} onChange={(e) => setFilterSystem(e.target.value)}>
           <option value="">Todos los sistemas</option>
           {boatSystems.map((s) => <option key={s.id} value={s.id}>{sysName(s, locale)}</option>)}
+        </select>
+        <select className="form-input form-select" value={filterKind} onChange={(e) => setFilterKind(e.target.value)}>
+          <option value="">Todos los tipos</option>
+          {KINDS.map((kind) => <option key={kind} value={kind}>{t(`kind_${kind}`)}</option>)}
         </select>
         <select className="form-input form-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="">Todos los estados</option>

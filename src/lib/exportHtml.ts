@@ -254,7 +254,6 @@ export function exportAllToHtml(
   ].filter(Boolean).join(" · ") || "Boat record";
 
   const stats = [
-    ["Propietarios", boat?.ownerNames?.join(", ")],
     ["Matricula", boat?.registrationNumber],
     ["Identificador", boat?.identifier],
     ["Astillero", boat?.shipyard],

@@ -11,10 +11,10 @@ import type { AdminBoatOption, AdminUser, AppRole } from "../lib/types";
 import { useAuth } from "../providers/AuthProvider";
 
 const roleOptions = [
-  { value: "superuser", label: "Superuser" },
-  { value: "owner_admin", label: "Owner admin" },
-  { value: "limited_user", label: "Limited user" },
-  { value: "read_only", label: "Read only" }
+  { value: "superuser", label: "Administrador total" },
+  { value: "owner_admin", label: "Gestor" },
+  { value: "limited_user", label: "Usuario operativo" },
+  { value: "read_only", label: "Solo lectura" }
 ] as const;
 
 const defaultRole: AppRole = "owner_admin";
@@ -66,19 +66,19 @@ function BoatAccessPicker({
               type="button"
             >
               <span>{boat.name}</span>
-              <small>Remove</small>
+              <small>Quitar</small>
             </button>
           ))
         ) : (
-          <span className="assignment-pill muted">No boats selected</span>
+          <span className="assignment-pill muted">Sin barcos seleccionados</span>
         )}
       </div>
 
       <label className="admin-search compact">
-        <span>Find boats</span>
+        <span>Buscar barcos</span>
         <input
           onChange={(event) => setBoatSearch(event.target.value)}
-          placeholder="Search by boat name or type"
+          placeholder="Nombre o tipo de barco"
           type="search"
           value={boatSearch}
         />
@@ -103,13 +103,13 @@ function BoatAccessPicker({
 
         {!matchingBoats.length && (
           <span className="field-hint">
-            {normalizedSearch ? "No boats match this search." : "All boats are already selected."}
+            {normalizedSearch ? "No hay barcos con esa busqueda." : "Todos los barcos ya estan seleccionados."}
           </span>
         )}
 
         {hiddenMatchCount > 0 && (
           <span className="field-hint">
-            {hiddenMatchCount} more matches. Keep typing to narrow the list.
+            {hiddenMatchCount} resultados mas. Sigue escribiendo para acotar.
           </span>
         )}
       </div>
@@ -188,7 +188,7 @@ export function AdminUsersPage() {
       setUsers(nextUsers);
       setBoats(nextBoats);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Unable to load admin data");
+      setError(nextError instanceof Error ? nextError.message : "No se pudieron cargar los usuarios");
     } finally {
       setLoading(false);
     }
@@ -221,6 +221,10 @@ export function AdminUsersPage() {
 
   function getUserRole(user: AdminUser): AppRole {
     return user.isSuperuser ? "superuser" : user.assignments[0]?.role ?? defaultRole;
+  }
+
+  function getRoleLabel(role: AppRole) {
+    return roleOptions.find((option) => option.value === role)?.label ?? role;
   }
 
   function hasMixedRoles(user: AdminUser) {
@@ -257,10 +261,10 @@ export function AdminUsersPage() {
       setInviteLanguage("es");
       setInviteRole("owner_admin");
       setInviteBoatIds([]);
-      setNotice("User invitation created and boat assignments saved.");
+      setNotice("Usuario creado y accesos guardados.");
       await refresh();
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Unable to invite user");
+      setError(nextError instanceof Error ? nextError.message : "No se pudo crear el usuario");
     }
   }
 
@@ -281,7 +285,7 @@ export function AdminUsersPage() {
       !hasMixedRoles(user) &&
       haveSameBoatIds(user, nextBoatIds)
     ) {
-      setNotice("No changes to save for this user.");
+      setNotice("No hay cambios que guardar para este usuario.");
       return;
     }
 
@@ -298,10 +302,10 @@ export function AdminUsersPage() {
 
       setEditPassword("");
       setEditAcceptInvite(false);
-      setNotice("User role and access credentials updated.");
+      setNotice("Usuario actualizado.");
       await refresh();
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Unable to update user");
+      setError(nextError instanceof Error ? nextError.message : "No se pudo actualizar el usuario");
     } finally {
       setUpdatingUserId(null);
     }
@@ -312,10 +316,10 @@ export function AdminUsersPage() {
       <section className="page">
         <div className="section-title">
           <span className="eyebrow">Admin</span>
-          <h2>Superuser user management</h2>
+          <h2>Gestion de usuarios</h2>
         </div>
         <article className="panel-card">
-          <p>Configure Supabase first. This module depends on Auth, RLS and an Edge Function.</p>
+          <p>Configura Supabase primero. Esta seccion depende de Auth, RLS y la Edge Function de usuarios.</p>
         </article>
       </section>
     );
@@ -326,10 +330,10 @@ export function AdminUsersPage() {
       <section className="page">
         <div className="section-title">
           <span className="eyebrow">Admin</span>
-          <h2>Superuser user management</h2>
+          <h2>Gestion de usuarios</h2>
         </div>
         <article className="panel-card">
-          <p>Loading administration workspace...</p>
+          <p>Cargando usuarios...</p>
         </article>
       </section>
     );
@@ -340,11 +344,11 @@ export function AdminUsersPage() {
       <section className="page">
         <div className="section-title">
           <span className="eyebrow">Admin</span>
-          <h2>Superuser user management</h2>
+          <h2>Gestion de usuarios</h2>
         </div>
         <article className="panel-card">
           <p>
-            This section is only available to users with the <code>superuser</code> role.
+            Esta seccion solo esta disponible para administradores.
           </p>
         </article>
       </section>
@@ -355,19 +359,19 @@ export function AdminUsersPage() {
     <section className="page">
       <div className="section-title">
         <span className="eyebrow">Admin</span>
-        <h2>Create and manage users</h2>
+        <h2>Usuarios</h2>
       </div>
 
       {error && (
         <div className="banner warning-banner">
-          <strong>Admin error</strong>
+          <strong>Error</strong>
           <span>{error}</span>
         </div>
       )}
 
       {notice && (
         <div className="banner success-banner">
-          <strong>Done</strong>
+          <strong>Listo</strong>
           <span>{notice}</span>
         </div>
       )}
@@ -375,8 +379,8 @@ export function AdminUsersPage() {
       <div className="grid-two admin-top-grid">
         <article className="panel-card">
           <div className="panel-head">
-            <h3>Invite new user</h3>
-            <span className="pill">Superuser only</span>
+            <h3>Crear usuario</h3>
+            <span className="pill">Solo administradores</span>
           </div>
           <form className="admin-form" onSubmit={handleInviteSubmit}>
             <label>
@@ -389,7 +393,7 @@ export function AdminUsersPage() {
               />
             </label>
             <label>
-              <span>Full name</span>
+              <span>Nombre visible</span>
               <input
                 onChange={(event) => setInviteName(event.target.value)}
                 required
@@ -399,17 +403,17 @@ export function AdminUsersPage() {
             </label>
             <div className="split-fields">
               <label>
-                <span>Language</span>
+                <span>Idioma</span>
                 <select
                   onChange={(event) => setInviteLanguage(event.target.value as "es" | "en")}
                   value={inviteLanguage}
                 >
-                  <option value="es">Spanish</option>
-                  <option value="en">English</option>
+                  <option value="es">Espanol</option>
+                  <option value="en">Ingles</option>
                 </select>
               </label>
               <label>
-                <span>Role</span>
+                <span>Perfil</span>
                 <select
                   onChange={(event) =>
                     setInviteRole(event.target.value as (typeof roleOptions)[number]["value"])
@@ -425,33 +429,33 @@ export function AdminUsersPage() {
               </label>
             </div>
             <div>
-              <span className="field-label">Boat access</span>
+              <span className="field-label">Barcos asignados</span>
               <BoatAccessPicker
                 boats={boats}
                 onToggle={(boatId) => setInviteBoatIds((current) => toggleBoat(current, boatId))}
                 selectedBoatIds={inviteBoatIds}
               />
             </div>
-            <button type="submit">Create user and assign boats</button>
+            <button type="submit">Crear usuario</button>
           </form>
         </article>
       </div>
 
       <article className="panel-card">
         <div className="panel-head">
-          <h3>Current users</h3>
+          <h3>Usuarios actuales</h3>
           <span className="pill">
-            {matchingUsers.length} / {users.length} users
+            {matchingUsers.length} / {users.length} usuarios
           </span>
         </div>
 
         <div className="admin-users-workspace">
           <div className="admin-users-list">
             <label className="admin-search">
-              <span>Search users</span>
+              <span>Buscar usuarios</span>
               <input
                 onChange={(event) => setUserSearch(event.target.value)}
-                placeholder="Name, email, boat or role"
+                placeholder="Nombre, email, barco o perfil"
                 type="search"
                 value={userSearch}
               />
@@ -461,10 +465,10 @@ export function AdminUsersPage() {
               <table className="admin-users-table">
                 <thead>
                   <tr>
-                    <th>User</th>
-                    <th>Invite</th>
-                    <th>Boats</th>
-                    <th>Role</th>
+                    <th>Usuario</th>
+                    <th>Invitacion</th>
+                    <th>Barcos</th>
+                    <th>Perfil</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -481,14 +485,14 @@ export function AdminUsersPage() {
                       <td>
                         <span className={`status-chip ${user.inviteStatus}`}>
                           {user.inviteStatus === "accepted"
-                            ? "Accepted"
+                            ? "Aceptada"
                             : user.inviteStatus === "pending"
-                              ? "Pending"
-                              : "No invite"}
+                              ? "Pendiente"
+                              : "Sin invitacion"}
                         </span>
                       </td>
-                      <td>{user.isSuperuser ? "All" : user.assignments.length}</td>
-                      <td>{hasMixedRoles(user) ? "Mixed" : getUserRole(user)}</td>
+                      <td>{user.isSuperuser ? "Todos" : user.assignments.length}</td>
+                      <td>{hasMixedRoles(user) ? "Varios" : getRoleLabel(getUserRole(user))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -496,20 +500,20 @@ export function AdminUsersPage() {
 
               {!matchingUsers.length && (
                 <div className="empty-state">
-                  <p>No users match this search.</p>
+                  <p>No hay usuarios con esa busqueda.</p>
                 </div>
               )}
             </div>
 
             {hiddenUserCount > 0 && (
               <p className="inline-note">
-                {hiddenUserCount} more users match. Keep typing to narrow the list.
+                {hiddenUserCount} usuarios mas. Sigue escribiendo para acotar.
               </p>
             )}
 
             {matchingUsers.length > 0 && !managedUser && (
               <p className="inline-note">
-                Select a user from the table to manage boats, role or password.
+                Selecciona un usuario para cambiar su perfil, barcos o contrasena.
               </p>
             )}
           </div>
@@ -523,28 +527,28 @@ export function AdminUsersPage() {
                     <p>
                       {managedUser.email} ·{" "}
                       {managedUser.inviteStatus === "accepted"
-                        ? "Invite accepted"
+                        ? "Invitacion aceptada"
                         : managedUser.inviteStatus === "pending"
-                          ? "Invite pending"
-                          : "No invite sent"}
+                          ? "Invitacion pendiente"
+                          : "Sin invitacion enviada"}
                     </p>
                   </div>
                   <span className="pill">
-                    {managedUser.isSuperuser ? "All boats" : `${managedUser.assignments.length} boats`}
+                    {managedUser.isSuperuser ? "Todos los barcos" : `${managedUser.assignments.length} barcos`}
                   </span>
                 </div>
 
                 <div className="assignment-list">
                   {managedUser.isSuperuser ? (
-                    <span className="assignment-pill">Global access · superuser</span>
+                    <span className="assignment-pill">Acceso global · administrador total</span>
                   ) : managedUser.assignments.length ? (
                     managedUser.assignments.map((assignment) => (
                       <span className="assignment-pill" key={assignment.membershipId}>
-                        {assignment.boatName} · {assignment.role}
+                        {assignment.boatName} · {getRoleLabel(assignment.role)}
                       </span>
                     ))
                   ) : (
-                    <span className="assignment-pill muted">No boat assigned yet</span>
+                    <span className="assignment-pill muted">Sin barcos asignados</span>
                   )}
                 </div>
 
@@ -553,7 +557,7 @@ export function AdminUsersPage() {
                   onSubmit={(event) => handleExistingUserUpdate(event, managedUser)}
                 >
                   <label>
-                    <span>{managedUser.isSuperuser ? "Global role" : "Role for selected boats"}</span>
+                    <span>{managedUser.isSuperuser ? "Perfil global" : "Perfil para los barcos seleccionados"}</span>
                     <select
                       onChange={(event) => setEditRole(event.target.value as AppRole)}
                       value={editRole}
@@ -566,23 +570,23 @@ export function AdminUsersPage() {
                     </select>
                     {hasMixedRoles(managedUser) && (
                       <small className="field-hint">
-                        Mixed roles now. Saving applies the selected role to all current boats.
+                        Ahora tiene perfiles distintos. Al guardar se aplicara este perfil a todos sus barcos.
                       </small>
                     )}
                   </label>
                   <label>
-                    <span>New password</span>
+                    <span>Nueva contrasena</span>
                     <input
                       autoComplete="new-password"
                       minLength={6}
                       onChange={(event) => setEditPassword(event.target.value)}
-                      placeholder="Leave blank to keep current"
+                      placeholder="Dejar en blanco para no cambiar"
                       type="password"
                       value={editPassword}
                     />
                     {managedUser.inviteStatus === "pending" && (
                       <small className="field-hint">
-                        Setting a password also marks the invite as accepted.
+                        Al definir una contrasena se marcara la invitacion como aceptada.
                       </small>
                     )}
                   </label>
@@ -593,16 +597,16 @@ export function AdminUsersPage() {
                         onChange={(event) => setEditAcceptInvite(event.target.checked)}
                         type="checkbox"
                       />
-                      <span>Mark invite as accepted</span>
+                      <span>Marcar invitacion como aceptada</span>
                     </label>
                   )}
                   {editRole === "superuser" ? (
                     <p className="field-hint">
-                      Superuser access is global. Boat assignments do not apply.
+                      El administrador total tiene acceso global. No necesita barcos asignados.
                     </p>
                   ) : (
                     <div>
-                      <span className="field-label">Boat access</span>
+                      <span className="field-label">Barcos asignados</span>
                       <BoatAccessPicker
                         boats={boats}
                         onToggle={(boatId) => setEditBoatIds((current) => toggleBoat(current, boatId))}
@@ -611,13 +615,13 @@ export function AdminUsersPage() {
                     </div>
                   )}
                   <button disabled={updatingUserId === managedUser.id} type="submit">
-                    {updatingUserId === managedUser.id ? "Saving..." : "Update user"}
+                    {updatingUserId === managedUser.id ? "Guardando..." : "Actualizar usuario"}
                   </button>
                 </form>
               </>
             ) : (
               <div className="empty-state">
-                <p>Select a user to manage boats, role or password.</p>
+                <p>Selecciona un usuario para cambiar su perfil, barcos o contrasena.</p>
               </div>
             )}
           </aside>

@@ -644,13 +644,23 @@ export async function deleteOwner(id: string) {
 
 // ─── Boats ────────────────────────────────────────────────────────────────────
 
+function boatIdentifier(payload: { name: string; identifier?: string | null }) {
+  const value = payload.identifier?.trim() || payload.name.trim();
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    || `barco-${Date.now()}`;
+}
+
 export async function fetchBoats(): Promise<Boat[]> {
   const { data, error } = await db()
     .from("boats")
     .select(
       `id, name, identifier, registration_number, brand_model, build_year,
-       shipyard, propulsion, boat_type, engine_notes, notes,
-       owner_boats ( owner_id, owner_companies ( id, name ) )`
+       shipyard, propulsion, boat_type, engine_notes, notes`
     )
     .order("name");
   if (error) throw error;
@@ -666,20 +676,19 @@ export async function fetchBoats(): Promise<Boat[]> {
     boatType: r.boat_type,
     engineNotes: r.engine_notes,
     notes: r.notes,
-    ownerIds: (r.owner_boats ?? []).map((ob: any) => ob.owner_companies?.id).filter(Boolean),
-    ownerNames: (r.owner_boats ?? []).map((ob: any) => ob.owner_companies?.name).filter(Boolean),
+    ownerIds: [],
+    ownerNames: [],
   }));
 }
 
 export async function createBoat(
-  payload: Omit<Boat, "id" | "ownerIds" | "ownerNames">,
-  ownerIds: string[]
+  payload: Omit<Boat, "id" | "ownerIds" | "ownerNames">
 ) {
   const { data, error } = await db()
     .from("boats")
     .insert({
       name: payload.name,
-      identifier: payload.identifier,
+      identifier: boatIdentifier(payload),
       registration_number: payload.registrationNumber,
       brand_model: payload.brandModel,
       build_year: payload.buildYear,
@@ -692,28 +701,21 @@ export async function createBoat(
     .select()
     .single();
   if (error) throw error;
-  if (ownerIds.length > 0) {
-    const links = ownerIds.map((oid, i) => ({
-      owner_id: oid,
-      boat_id: data.id,
-      is_primary: i === 0,
-    }));
-    const { error: linkErr } = await db().from("owner_boats").insert(links);
-    if (linkErr) throw linkErr;
-  }
   return data;
 }
 
 export async function updateBoat(
   id: string,
-  payload: Partial<Omit<Boat, "id" | "ownerIds" | "ownerNames">>,
-  ownerIds?: string[]
+  payload: Partial<Omit<Boat, "id" | "ownerIds" | "ownerNames">>
 ) {
   const { error } = await db()
     .from("boats")
     .update({
       name: payload.name,
-      identifier: payload.identifier,
+      identifier: boatIdentifier({
+        name: payload.name ?? "",
+        identifier: payload.identifier,
+      }),
       registration_number: payload.registrationNumber,
       brand_model: payload.brandModel,
       build_year: payload.buildYear,
@@ -725,18 +727,6 @@ export async function updateBoat(
     })
     .eq("id", id);
   if (error) throw error;
-  if (ownerIds !== undefined) {
-    await db().from("owner_boats").delete().eq("boat_id", id);
-    if (ownerIds.length > 0) {
-      const links = ownerIds.map((oid, i) => ({
-        owner_id: oid,
-        boat_id: id,
-        is_primary: i === 0,
-      }));
-      const { error: linkErr } = await db().from("owner_boats").insert(links);
-      if (linkErr) throw linkErr;
-    }
-  }
 }
 
 export async function deleteBoat(id: string) {
