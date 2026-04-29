@@ -2261,3 +2261,14 @@ html[data-theme="niebla"] .form-select {
   background: var(--red, #ef4444);
   color: #fff;
 }
+
+.boat-detail-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.boat-detail-section-head h4 {
+  margin: 0;
+}

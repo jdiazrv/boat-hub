@@ -8,6 +8,7 @@ import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { useAppData } from "../providers/AppDataProvider";
 import { useAuth } from "../providers/AuthProvider";
+import { useActiveBoat } from "../providers/ActiveBoatProvider";
 import { BoatDetailPage } from "./BoatDetailPage";
 
 const EMPTY_BOAT: Omit<Boat, "id" | "ownerIds" | "ownerNames"> = {
@@ -135,12 +136,18 @@ export function BoatsPage() {
   const [error, setError] = useState<string | null>(null);
   const [schedulePlans, setSchedulePlans] = useState<SchedulePlan[]>([]);
 
+  const { activeBoatId } = useActiveBoat();
   const displayBoats = isSupabaseConfigured ? allBoats : boats;
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     db.fetchSchedulePlans().then(setSchedulePlans).catch(() => setSchedulePlans([]));
   }, []);
+
+  // Close detail view when active boat changes
+  useEffect(() => {
+    setDetailBoat(null);
+  }, [activeBoatId]);
 
   function openCreate() {
     setEditing(null);
@@ -174,6 +181,10 @@ export function BoatsPage() {
         await db.applySchedulePlanToBoat(schedulePlanId, boatId);
       }
       await refresh();
+      // If we were editing from inside the detail view, update detailBoat with new data
+      if (editing && detailBoat?.id === editing.id) {
+        setDetailBoat((prev) => prev ? { ...prev, ...data } : prev);
+      }
       closeModal();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar");
@@ -189,6 +200,7 @@ export function BoatsPage() {
     try {
       await db.deleteBoat(editing.id);
       await refresh();
+      setDetailBoat(null);
       closeModal();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al eliminar");
@@ -198,7 +210,14 @@ export function BoatsPage() {
   }
 
   if (detailBoat) {
-    return <BoatDetailPage boat={detailBoat} onBack={() => setDetailBoat(null)} />;
+    return (
+      <BoatDetailPage
+        boat={detailBoat}
+        onBack={() => setDetailBoat(null)}
+        onEditBoat={isSupabaseConfigured && session ? (b) => { openEdit(b); } : undefined}
+        onBoatUpdated={(updated) => setDetailBoat(updated)}
+      />
+    );
   }
 
   return (
@@ -236,9 +255,6 @@ export function BoatsPage() {
                 </h3>
                 <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                   <span className="pill">{("boatType" in boat ? (boat as Boat).boatType : (boat as typeof boats[0]).type) ?? "Boat"}</span>
-                  {isSupabaseConfigured && session && full && (
-                    <button className="btn-icon" onClick={(e) => { e.stopPropagation(); openEdit(full); }} type="button" title="Editar">✏</button>
-                  )}
                 </div>
               </div>
               <p style={{ fontSize: "0.88rem", color: "var(--text-soft)", margin: "0.3rem 0 0" }}>

@@ -26,14 +26,23 @@ function TankBar({ pct }: { pct: number }) {
   );
 }
 
-export function BoatTabTanks({ tanks }: { tanks: BoatTank[] }) {
+export function BoatTabTanks({ tanks, canEdit, onEdit }: {
+  tanks: BoatTank[];
+  canEdit?: boolean;
+  onEdit?: () => void;
+}) {
   const totalDiesel = tanks.filter((t) => t.type === "diesel").reduce((s, t) => s + t.capacity, 0);
   const totalWater  = tanks.filter((t) => t.type === "fresh_water").reduce((s, t) => s + t.capacity, 0);
 
   return (
     <div className="boat-detail-sections">
       <section className="boat-detail-section">
-        <h4>Capacidades nominales</h4>
+        <div className="boat-detail-section-head">
+          <h4>Capacidades nominales</h4>
+          {canEdit && onEdit && (
+            <button className="btn-icon" type="button" title="Editar tanques" onClick={onEdit}>✏</button>
+          )}
+        </div>
 
         {tanks.length === 0 && (
           <p className="data-table-cell-muted">Sin tanques registrados.</p>

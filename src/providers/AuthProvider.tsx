@@ -15,6 +15,9 @@ type AuthContextValue = {
   session: Session | null;
   isSuperuser: boolean;
   permissionLevel: string | null;
+  /** boatId → role for boats this user belongs to */
+  boatRoles: Record<string, AppRole>;
+  canEditBoat: (boatId: string) => boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 };
@@ -23,6 +26,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 type MembershipRow = {
   role: AppRole;
+  boat_id: string;
   boats: { name: string | null } | { name: string | null }[] | null;
 };
 
@@ -46,8 +50,12 @@ function formatPermissionLevel(memberships: MembershipRow[]) {
     .join(" / ");
 }
 
-async function loadAccess(userId: string): Promise<{ isSuperuser: boolean; permissionLevel: string | null }> {
-  if (!supabase) return { isSuperuser: false, permissionLevel: null };
+async function loadAccess(userId: string): Promise<{
+  isSuperuser: boolean;
+  permissionLevel: string | null;
+  boatRoles: Record<string, AppRole>;
+}> {
+  if (!supabase) return { isSuperuser: false, permissionLevel: null, boatRoles: {} };
 
   const { data } = await supabase
     .from("user_profiles")
@@ -57,16 +65,22 @@ async function loadAccess(userId: string): Promise<{ isSuperuser: boolean; permi
 
   const { data: memberships } = await supabase
     .from("boat_memberships")
-    .select("role, boats(name)")
+    .select("role, boat_id, boats(name)")
     .eq("user_id", userId)
     .order("role");
 
   const membershipRows = ((memberships ?? []) as MembershipRow[]);
   const isSuperuser = Boolean(data?.is_superuser) || membershipRows.some((row) => row.role === "superuser");
 
+  const boatRoles = membershipRows.reduce<Record<string, AppRole>>((acc, row) => {
+    acc[row.boat_id] = row.role;
+    return acc;
+  }, {});
+
   return {
     isSuperuser,
-    permissionLevel: isSuperuser ? "superuser" : formatPermissionLevel(membershipRows)
+    permissionLevel: isSuperuser ? "superuser" : formatPermissionLevel(membershipRows),
+    boatRoles,
   };
 }
 
@@ -75,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isSuperuser, setIsSuperuser] = useState(false);
   const [permissionLevel, setPermissionLevel] = useState<string | null>(null);
+  const [boatRoles, setBoatRoles] = useState<Record<string, AppRole>>({});
 
   useEffect(() => {
     if (!supabase) {
@@ -101,10 +116,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void loadAccess(session.user.id).then((access) => {
         setIsSuperuser(access.isSuperuser);
         setPermissionLevel(access.permissionLevel);
+        setBoatRoles(access.boatRoles);
       });
     } else {
       setIsSuperuser(false);
       setPermissionLevel(null);
+      setBoatRoles({});
     }
   }, [session?.user.id]);
 
@@ -114,6 +131,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       isSuperuser,
       permissionLevel,
+      boatRoles,
+      canEditBoat(boatId: string) {
+        if (isSuperuser) return true;
+        const role = boatRoles[boatId];
+        return role === "owner_admin";
+      },
       async signIn(email, password) {
         if (!supabase) {
           return null;
@@ -134,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut();
       }
     }),
-    [loading, session, isSuperuser, permissionLevel]
+    [loading, session, isSuperuser, permissionLevel, boatRoles]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

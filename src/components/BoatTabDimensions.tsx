@@ -52,7 +52,11 @@ function SailRow({ sail }: { sail: SailInventoryItem }) {
   );
 }
 
-export function BoatTabDimensions({ dims }: { dims: BoatDimensions }) {
+export function BoatTabDimensions({ dims, canEdit, onEdit }: {
+  dims: BoatDimensions;
+  canEdit?: boolean;
+  onEdit?: () => void;
+}) {
   const winds = dims.polarWindSpeeds ?? WIND_SPEEDS;
   const hasPolar = dims.polarRows && dims.polarRows.length > 0;
   const hasSails = dims.sails && dims.sails.length > 0;
@@ -61,7 +65,12 @@ export function BoatTabDimensions({ dims }: { dims: BoatDimensions }) {
     <div className="boat-detail-sections">
       {/* ── ORC Diagram ─────────────────────────────────────────────── */}
       <section className="boat-detail-section boat-detail-section--diagram">
-        <h4>Esquema ORC</h4>
+        <div className="boat-detail-section-head" style={{ width: "100%", marginBottom: "0.5rem" }}>
+          <h4 style={{ margin: 0 }}>Esquema ORC</h4>
+          {canEdit && onEdit && (
+            <button className="btn-icon" type="button" title="Editar dimensiones" onClick={onEdit}>✏</button>
+          )}
+        </div>
         <OrcDiagram dims={dims} />
       </section>
 

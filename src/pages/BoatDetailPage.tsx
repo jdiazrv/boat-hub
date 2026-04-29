@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import type { Boat, BoatDocument } from "../lib/types";
+import type { Boat, BoatDocument, BoatDimensions, BoatTank, BoatIdentifiers } from "../lib/types";
 import * as db from "../lib/db";
 import { useAuth } from "../providers/AuthProvider";
 import { BoatTabGeneral } from "../components/BoatTabGeneral";
 import { BoatTabDimensions } from "../components/BoatTabDimensions";
 import { BoatTabTanks } from "../components/BoatTabTanks";
 import { BoatTabDocuments } from "../components/BoatTabDocuments";
+import { EditDimensionsModal } from "../components/EditDimensionsModal";
+import { EditTanksModal } from "../components/EditTanksModal";
+import { EditIdentifiersModal } from "../components/EditIdentifiersModal";
 import { flagEmoji } from "../lib/flags";
 
 type Tab = "general" | "dimensions" | "tanks" | "documents";
@@ -17,11 +20,19 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "documents",  label: "Documentos" },
 ];
 
-export function BoatDetailPage({ boat, onBack }: { boat: Boat; onBack: () => void }) {
-  const { isSuperuser } = useAuth();
+export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUpdated }: {
+  boat: Boat;
+  onBack: () => void;
+  onEditBoat?: (boat: Boat) => void;
+  onBoatUpdated?: (boat: Boat) => void;
+}) {
+  const { canEditBoat } = useAuth();
+  const [boat, setBoat] = useState(initialBoat);
+  const canEdit = canEditBoat(boat.id);
   const [tab, setTab] = useState<Tab>("general");
   const [docs, setDocs] = useState<BoatDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [editModal, setEditModal] = useState<"dimensions" | "tanks" | "identifiers" | null>(null);
 
   useEffect(() => {
     setDocsLoading(true);
@@ -33,6 +44,21 @@ export function BoatDetailPage({ boat, onBack }: { boat: Boat; onBack: () => voi
 
   function refreshDocs() {
     db.fetchBoatDocuments(boat.id).then(setDocs).catch(() => {});
+  }
+
+  async function saveDimensions(dims: BoatDimensions) {
+    await db.updateBoatDimensions(boat.id, dims);
+    setBoat((b) => { const updated = { ...b, dimensions: dims }; onBoatUpdated?.(updated); return updated; });
+  }
+
+  async function saveTanks(tanks: BoatTank[]) {
+    await db.updateBoatTanks(boat.id, tanks);
+    setBoat((b) => { const updated = { ...b, tanks }; onBoatUpdated?.(updated); return updated; });
+  }
+
+  async function saveIdentifiers(identifiers: BoatIdentifiers) {
+    await db.updateBoatIdentifiers(boat.id, identifiers);
+    setBoat((b) => { const updated = { ...b, identifiers }; onBoatUpdated?.(updated); return updated; });
   }
 
   const flag = boat.flag ? `${flagEmoji(boat.flag)} ` : "";
@@ -72,18 +98,29 @@ export function BoatDetailPage({ boat, onBack }: { boat: Boat; onBack: () => voi
 
       {/* ── Tab content ── */}
       <div className="tab-content">
-        {tab === "general" && <BoatTabGeneral boat={boat} />}
+        {tab === "general" && (
+          <BoatTabGeneral
+            boat={boat}
+            canEdit={canEdit}
+            onEditBoat={onEditBoat ? () => onEditBoat(boat) : undefined}
+            onEditIdentifiers={() => setEditModal("identifiers")}
+          />
+        )}
 
         {tab === "dimensions" && (
-          boat.dimensions
-            ? <BoatTabDimensions dims={boat.dimensions} />
-            : <p className="data-table-cell-muted">Sin datos de dimensiones registrados.</p>
+          <BoatTabDimensions
+            dims={boat.dimensions ?? {}}
+            canEdit={canEdit}
+            onEdit={() => setEditModal("dimensions")}
+          />
         )}
 
         {tab === "tanks" && (
-          boat.tanks && boat.tanks.length > 0
-            ? <BoatTabTanks tanks={boat.tanks} />
-            : <p className="data-table-cell-muted">Sin tanques registrados.</p>
+          <BoatTabTanks
+            tanks={boat.tanks ?? []}
+            canEdit={canEdit}
+            onEdit={() => setEditModal("tanks")}
+          />
         )}
 
         {tab === "documents" && (
@@ -93,10 +130,33 @@ export function BoatDetailPage({ boat, onBack }: { boat: Boat; onBack: () => voi
                 boatId={boat.id}
                 docs={docs}
                 onRefresh={refreshDocs}
-                canEdit={isSuperuser}
+                canEdit={canEdit}
               />
         )}
       </div>
+
+      {/* ── Edit modals ── */}
+      {editModal === "dimensions" && (
+        <EditDimensionsModal
+          dims={boat.dimensions ?? {}}
+          onSave={async (d) => { await saveDimensions(d); setEditModal(null); }}
+          onClose={() => setEditModal(null)}
+        />
+      )}
+      {editModal === "tanks" && (
+        <EditTanksModal
+          tanks={boat.tanks ?? []}
+          onSave={async (t) => { await saveTanks(t); setEditModal(null); }}
+          onClose={() => setEditModal(null)}
+        />
+      )}
+      {editModal === "identifiers" && (
+        <EditIdentifiersModal
+          identifiers={boat.identifiers ?? {}}
+          onSave={async (ids) => { await saveIdentifiers(ids); setEditModal(null); }}
+          onClose={() => setEditModal(null)}
+        />
+      )}
     </div>
   );
 }
