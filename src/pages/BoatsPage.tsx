@@ -211,12 +211,50 @@ export function BoatsPage() {
 
   if (detailBoat) {
     return (
-      <BoatDetailPage
-        boat={detailBoat}
-        onBack={() => setDetailBoat(null)}
-        onEditBoat={isSupabaseConfigured && session ? (b) => { openEdit(b); } : undefined}
-        onBoatUpdated={(updated) => setDetailBoat(updated)}
-      />
+      <>
+        <BoatDetailPage
+          boat={detailBoat}
+          onBack={() => setDetailBoat(null)}
+          onEditBoat={isSupabaseConfigured && session ? (b) => { openEdit(b); } : undefined}
+          onBoatUpdated={(updated) => setDetailBoat(updated)}
+        />
+        {modal && (
+          <Modal
+            title={modal === "create" ? t("newBoat") : t("editBoat")}
+            onClose={closeModal}
+            wide
+          >
+            <BoatForm
+              initial={
+                editing
+                  ? {
+                      name: editing.name,
+                      identifier: editing.identifier,
+                      registrationNumber: editing.registrationNumber,
+                      brandModel: editing.brandModel,
+                      buildYear: editing.buildYear,
+                      shipyard: editing.shipyard,
+                      propulsion: editing.propulsion,
+                      boatType: editing.boatType,
+                      engineNotes: editing.engineNotes,
+                      notes: editing.notes,
+                      flag: editing.flag,
+                      dimensions: editing.dimensions,
+                      tanks: editing.tanks,
+                      identifiers: editing.identifiers,
+                    }
+                  : EMPTY_BOAT
+              }
+              schedulePlans={schedulePlans}
+              onSave={handleSave}
+              onDelete={editing ? handleDelete : undefined}
+              onCancel={closeModal}
+              loading={saving}
+              error={error}
+            />
+          </Modal>
+        )}
+      </>
     );
   }
 
