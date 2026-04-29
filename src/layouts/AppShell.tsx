@@ -70,6 +70,7 @@ const NAV_GROUPS: NavGroupDef[] = [
     boatScoped: true,
     collapsible: true,
     links: [
+      { to: "/schedule", key: "maintenanceSchedule" },
       { to: "/preventive", key: "preventive" },
       { to: "/haul-outs", key: "haulOuts" },
       { to: "/future-actions", key: "futureActions" },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as db from "../lib/db";
 import type { BoatCatalogOverride, BoatScheduleEntry, MaintenanceTemplate, MaintenanceTemplateSpare } from "../lib/types";
 import { FormActions, FormGrid, FormSection, InputField, TextareaField } from "../components/FormField";
@@ -264,6 +264,48 @@ type ModalMode =
   | { kind: "add-entry"; template: MaintenanceTemplate }
   | { kind: "edit-entry"; entry: BoatScheduleEntry };
 
+type ScheduleView = "list" | "gantt";
+
+function parseDate(value: string | null) {
+  return value ? new Date(`${value}T00:00:00`) : null;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function addMonths(date: Date, months: number) {
+  const next = new Date(date);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function daysBetween(a: Date, b: Date) {
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+function entryTitle(entry: BoatScheduleEntry, locale: "es" | "en") {
+  return locale === "es"
+    ? entry.template.titleEs || entry.template.titleEn || entry.template.title
+    : entry.template.titleEn || entry.template.titleEs || entry.template.title;
+}
+
+function entrySystem(entry: BoatScheduleEntry, locale: "es" | "en") {
+  return locale === "es"
+    ? entry.template.systemNameEs || entry.template.systemNameEn
+    : entry.template.systemNameEn || entry.template.systemNameEs;
+}
+
 export function SchedulePage() {
   const { t, locale } = useI18n();
   const { activeBoatId, activeBoat } = useActiveBoat();
@@ -278,6 +320,7 @@ export function SchedulePage() {
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalMode | null>(null);
   const [systemFilter, setSystemFilter] = useState("");
+  const [view, setView] = useState<ScheduleView>("gantt");
 
   async function refresh() {
     if (!activeBoatId) return;
@@ -317,9 +360,19 @@ export function SchedulePage() {
     ])).values()
   ).sort((a, b) => a.nameEs.localeCompare(b.nameEs));
 
-  const filtered = schedule.filter((e) =>
-    !systemFilter || e.template.systemCode === systemFilter
+  const filtered = useMemo(
+    () => schedule.filter((e) => !systemFilter || e.template.systemCode === systemFilter),
+    [schedule, systemFilter]
   );
+
+  const ganttRange = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = startOfMonth(today);
+    const end = addMonths(start, 12);
+    const months = Array.from({ length: 12 }, (_, index) => addMonths(start, index));
+    return { start, end, months, totalDays: Math.max(1, daysBetween(start, end)) };
+  }, []);
 
   function closeModal() { setModal(null); setError(null); }
 
@@ -375,6 +428,20 @@ export function SchedulePage() {
     return "—";
   }
 
+  function ganttBar(entry: BoatScheduleEntry) {
+    const due = parseDate(entry.nextDueDate);
+    if (!due) return null;
+
+    const explicitStart = parseDate(entry.lastDoneAt);
+    const intervalStart = entry.intervalDays ? addDays(due, -entry.intervalDays) : null;
+    const start = explicitStart ?? intervalStart ?? due;
+    const visibleStart = clamp(daysBetween(ganttRange.start, start), 0, ganttRange.totalDays);
+    const visibleEnd = clamp(daysBetween(ganttRange.start, due), 0, ganttRange.totalDays);
+    const left = (Math.min(visibleStart, visibleEnd) / ganttRange.totalDays) * 100;
+    const width = Math.max(1.25, (Math.abs(visibleEnd - visibleStart) / ganttRange.totalDays) * 100);
+    return { left, width, due };
+  }
+
   if (!activeBoatId) {
     return (
       <section className="page">
@@ -421,6 +488,22 @@ export function SchedulePage() {
         <span style={{ fontSize: "0.84rem", color: "var(--text-soft)" }}>
           {schedule.length} tareas en el plan
         </span>
+        <div className="view-toggle" role="tablist" aria-label="Vista del plan">
+          <button
+            type="button"
+            className={view === "gantt" ? "active" : ""}
+            onClick={() => setView("gantt")}
+          >
+            Gantt
+          </button>
+          <button
+            type="button"
+            className={view === "list" ? "active" : ""}
+            onClick={() => setView("list")}
+          >
+            Lista
+          </button>
+        </div>
       </div>
 
       {loading && <p className="data-table-cell-muted">Cargando…</p>}
@@ -431,22 +514,13 @@ export function SchedulePage() {
         </div>
       )}
 
-      <div className="schedule-table">
-        {filtered.map((entry) => {
-          const title =
-            locale === "es"
-              ? entry.template.titleEs || entry.template.titleEn || entry.template.title
-              : entry.template.titleEn || entry.template.titleEs || entry.template.title;
-          const sysLabel =
-            locale === "es"
-              ? entry.template.systemNameEs || entry.template.systemNameEn
-              : entry.template.systemNameEn || entry.template.systemNameEs;
-
-          return (
-            <div key={entry.id} className="schedule-row">
+      {view === "list" && (
+        <div className="schedule-table">
+          {filtered.map((entry) => (
+            <div key={entry.id} className={`schedule-row state-${entry.state}`}>
               <div className="schedule-row-info">
-                <span className="schedule-row-sys">{sysLabel}</span>
-                <span className="schedule-row-title">{title}</span>
+                <span className="schedule-row-sys">{entrySystem(entry, locale)}</span>
+                <span className="schedule-row-title">{entryTitle(entry, locale)}</span>
               </div>
               <div className="schedule-row-meta">
                 <span className="schedule-meta-item">
@@ -469,9 +543,67 @@ export function SchedulePage() {
                 )}
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {view === "gantt" && (
+        <div className="gantt-board">
+          <div className="gantt-head">
+            <div className="gantt-head-label">Trabajo periódico</div>
+            <div className="gantt-months">
+              {ganttRange.months.map((month) => (
+                <span key={month.toISOString()}>
+                  {new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", { month: "short" }).format(month)}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {filtered.map((entry) => {
+            const bar = ganttBar(entry);
+            return (
+              <div key={entry.id} className={`gantt-row state-${entry.state}`}>
+                <button
+                  type="button"
+                  className="gantt-task"
+                  onClick={() => setModal({ kind: "edit-entry", entry })}
+                >
+                  <span className="gantt-task-system">{entrySystem(entry, locale)}</span>
+                  <span className="gantt-task-title">{entryTitle(entry, locale)}</span>
+                  <span className="gantt-task-rule">{ruleLabel(entry)}</span>
+                </button>
+                <div className="gantt-track">
+                  {bar ? (
+                    <button
+                      type="button"
+                      className={`gantt-bar state-${entry.state}`}
+                      style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
+                      onClick={() => setModal({ kind: "edit-entry", entry })}
+                      title={`${entryTitle(entry, locale)} · ${entry.nextDueDate ?? ""}`}
+                    >
+                      <span>{entry.nextDueDate}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="gantt-no-date"
+                      onClick={() => setModal({ kind: "edit-entry", entry })}
+                    >
+                      Sin fecha
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {filtered.length === 0 && !loading && (
+            <div className="empty-state">
+              <p>No hay trabajos periódicos con estos filtros.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Modals ── */}
 
