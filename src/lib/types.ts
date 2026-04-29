@@ -160,6 +160,137 @@ export type Owner = {
   notes: string | null;
 };
 
+// ─── Boat dimensions (ORC schema) ────────────────────────────────────────────
+
+export type BoatDimensions = {
+  // Hull
+  loa?: number | null;
+  maxBeam?: number | null;
+  draft?: number | null;
+  displacement?: number | null;
+  wettedArea?: number | null;
+  dlr?: number | null;
+  // Rig (ORC measurement letters)
+  P?: number | null;    // Mainsail hoist
+  E?: number | null;    // Mainsail foot
+  IG?: number | null;   // Foretriangle height (deck)
+  ISP?: number | null;  // Foretriangle height (spinnaker)
+  J?: number | null;    // Foretriangle base
+  BAS?: number | null;  // Boom above sheer
+  TPS?: number | null;  // Tackline to pole support
+  TL?: number | null;   // Trunk length
+  MW?: number | null;   // Maximum mast width
+  GO?: number | null;   // Gooseneck offset
+  BD?: number | null;   // Boom depth
+  MWT?: number | null;  // Mast weight (kg)
+  MCG?: number | null;  // Mast center of gravity
+  // Stability
+  rmRated?: number | null;
+  stabilityIndex?: number | null;
+  lps?: number | null;
+  // Sail areas (m²)
+  mainsailMeasured?: number | null;
+  mainsailRated?: number | null;
+  headsailMeasured?: number | null;
+  headsailRated?: number | null;
+  asymmetricMeasured?: number | null;
+  asymmetricRated?: number | null;
+  trysail?: number | null;
+  stormJib?: number | null;
+  heavyJib?: number | null;
+  // ORC ratings
+  imsClass?: string | null;
+  orcGph?: number | null;
+  orcAph?: number | null;
+  orcCdl?: number | null;
+  certNo?: string | null;
+  spreadersCount?: number | null;
+  carbonMast?: boolean | null;
+  headsailFurler?: boolean | null;
+  // Sail inventory
+  sails?: SailInventoryItem[] | null;
+  // VPP polar data (wind speeds 6,8,10,12,14,16,20 kt)
+  polarWindSpeeds?: number[] | null;
+  polarBeatAngles?: number[] | null;
+  polarBeatVmg?: number[] | null;
+  polarRunVmg?: number[] | null;
+  polarGybeAngles?: number[] | null;
+  polarRows?: PolarRow[] | null;
+};
+
+export type PolarRow = {
+  twa: number;           // True wind angle (degrees)
+  speeds: number[];      // Boat speeds at each wind speed
+};
+
+export type SailInventoryItem = {
+  id: string;
+  label: string;                        // e.g. "Mayor", "Génova nº1", "Code Zero"
+  sailType: "mainsail" | "headsail" | "spinnaker_sym" | "spinnaker_asym" | "code_zero" | "gennaker" | "trysail" | "storm_jib" | "other";
+  sailNumber?: string | null;           // e.g. "ESP-10343"
+  material?: string | null;             // e.g. "Dacron", "Laminado"
+  manufacturer?: string | null;
+  year?: number | null;
+  // Measurements (m)
+  luff?: number | null;                 // Grátil
+  leech?: number | null;                // Baluma
+  foot?: number | null;                 // Pujamen
+  area?: number | null;                 // m² medida
+  lpPercent?: number | null;            // LP% (solapamiento génova)
+  slu?: number | null;                  // Spinnaker luff
+  sle?: number | null;                  // Spinnaker leech
+  sl?: number | null;                   // Spinnaker length
+  shw?: number | null;                  // Spinnaker half width
+  sfl?: number | null;                  // Spinnaker foot length
+  condition?: "new" | "good" | "fair" | "worn" | null;
+  notes?: string | null;
+};
+
+export type TankType = "diesel" | "fresh_water" | "grey_water" | "black_water" | "lpg" | "other";
+
+export type BoatTank = {
+  id: string;
+  type: TankType;
+  label: string;
+  capacity: number;
+  unit: "L" | "gal";
+  material?: string | null;
+  notes?: string | null;
+};
+
+export type BoatIdentifiers = {
+  mmsi?: string | null;
+  callSign?: string | null;
+  imoNumber?: string | null;
+  intNominativo?: string | null;
+  winCode?: string | null;
+  atcnRef?: string | null;
+};
+
+export type BoatDocType =
+  | "insurance"
+  | "tepai"
+  | "seaworthiness"
+  | "vhf_license"
+  | "customs"
+  | "crew_list"
+  | "radio_license"
+  | "safety_cert"
+  | "other";
+
+export type BoatDocument = {
+  id: string;
+  boatId: string;
+  docType: BoatDocType;
+  label: string;
+  storagePath: string | null;
+  expiryDate: string | null;
+  issuedDate: string | null;
+  issuer: string | null;
+  notes: string | null;
+  createdAt: string;
+};
+
 // ─── Boat ─────────────────────────────────────────────────────────────────────
 
 export type Boat = {
@@ -175,6 +306,9 @@ export type Boat = {
   engineNotes: string | null;
   notes: string | null;
   flag: string | null;
+  dimensions: BoatDimensions | null;
+  tanks: BoatTank[] | null;
+  identifiers: BoatIdentifiers | null;
   ownerIds: string[];
   ownerNames: string[];
 };

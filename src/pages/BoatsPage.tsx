@@ -8,6 +8,7 @@ import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { useAppData } from "../providers/AppDataProvider";
 import { useAuth } from "../providers/AuthProvider";
+import { BoatDetailPage } from "./BoatDetailPage";
 
 const EMPTY_BOAT: Omit<Boat, "id" | "ownerIds" | "ownerNames"> = {
   name: "",
@@ -21,6 +22,9 @@ const EMPTY_BOAT: Omit<Boat, "id" | "ownerIds" | "ownerNames"> = {
   engineNotes: null,
   notes: null,
   flag: null,
+  dimensions: null,
+  tanks: null,
+  identifiers: null,
 };
 
 function BoatForm({
@@ -126,6 +130,7 @@ export function BoatsPage() {
   const { boats, allBoats, refresh, loading } = useAppData();
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<Boat | null>(null);
+  const [detailBoat, setDetailBoat] = useState<Boat | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [schedulePlans, setSchedulePlans] = useState<SchedulePlan[]>([]);
@@ -192,6 +197,10 @@ export function BoatsPage() {
     }
   }
 
+  if (detailBoat) {
+    return <BoatDetailPage boat={detailBoat} onBack={() => setDetailBoat(null)} />;
+  }
+
   return (
     <section className="page">
       <div className="page-header">
@@ -212,7 +221,12 @@ export function BoatsPage() {
         {displayBoats.map((boat) => {
           const full = allBoats.find((b) => b.id === boat.id);
           return (
-            <article className="panel-card" key={boat.id}>
+            <article
+              className="panel-card panel-card--clickable"
+              key={boat.id}
+              onClick={() => full && setDetailBoat(full)}
+              style={{ cursor: full ? "pointer" : undefined }}
+            >
               <div className="panel-head">
                 <h3>
                   {"flag" in boat && (boat as Boat).flag
@@ -223,7 +237,7 @@ export function BoatsPage() {
                 <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                   <span className="pill">{("boatType" in boat ? (boat as Boat).boatType : (boat as typeof boats[0]).type) ?? "Boat"}</span>
                   {isSupabaseConfigured && session && full && (
-                    <button className="btn-icon" onClick={() => openEdit(full)} type="button" title="Editar">✏</button>
+                    <button className="btn-icon" onClick={(e) => { e.stopPropagation(); openEdit(full); }} type="button" title="Editar">✏</button>
                   )}
                 </div>
               </div>
@@ -290,6 +304,9 @@ export function BoatsPage() {
                     engineNotes: editing.engineNotes,
                     notes: editing.notes,
                     flag: editing.flag,
+                    dimensions: editing.dimensions,
+                    tanks: editing.tanks,
+                    identifiers: editing.identifiers,
                   }
                 : EMPTY_BOAT
             }

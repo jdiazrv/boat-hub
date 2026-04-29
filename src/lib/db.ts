@@ -4,8 +4,12 @@ import type {
   BoatCatalogOverride,
   BoatCatalogOverrideSpare,
   BoatComponent,
+  BoatDocument,
+  BoatDimensions,
+  BoatIdentifiers,
   BoatInventoryCatalogEntry,
   BoatSystem,
+  BoatTank,
   FuelLog,
   FutureAction,
   FuturePurchase,
@@ -660,7 +664,8 @@ export async function fetchBoats(): Promise<Boat[]> {
     .from("boats")
     .select(
       `id, name, identifier, registration_number, brand_model, build_year,
-       shipyard, propulsion, boat_type, engine_notes, notes, flag`
+       shipyard, propulsion, boat_type, engine_notes, notes, flag,
+       dimensions, tanks, identifiers`
     )
     .order("name");
   if (error) throw error;
@@ -677,6 +682,9 @@ export async function fetchBoats(): Promise<Boat[]> {
     engineNotes: r.engine_notes,
     notes: r.notes,
     flag: r.flag ?? null,
+    dimensions: r.dimensions ?? null,
+    tanks: r.tanks ?? null,
+    identifiers: r.identifiers ?? null,
     ownerIds: [],
     ownerNames: [],
   }));
@@ -738,6 +746,85 @@ export async function updateBoat(
 export async function deleteBoat(id: string) {
   const { error } = await db().from("boats").delete().eq("id", id);
   if (error) throw error;
+}
+
+export async function updateBoatDimensions(id: string, dimensions: BoatDimensions) {
+  const { error } = await db().from("boats").update({ dimensions }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateBoatTanks(id: string, tanks: BoatTank[]) {
+  const { error } = await db().from("boats").update({ tanks }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateBoatIdentifiers(id: string, identifiers: BoatIdentifiers) {
+  const { error } = await db().from("boats").update({ identifiers }).eq("id", id);
+  if (error) throw error;
+}
+
+// ─── Boat Documents ───────────────────────────────────────────────────────────
+
+export async function fetchBoatDocuments(boatId: string): Promise<BoatDocument[]> {
+  const { data, error } = await db()
+    .from("boat_documents")
+    .select("id, boat_id, doc_type, label, storage_path, expiry_date, issued_date, issuer, notes, created_at")
+    .eq("boat_id", boatId)
+    .order("doc_type")
+    .order("created_at");
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id,
+    boatId: r.boat_id,
+    docType: r.doc_type,
+    label: r.label,
+    storagePath: r.storage_path ?? null,
+    expiryDate: r.expiry_date ?? null,
+    issuedDate: r.issued_date ?? null,
+    issuer: r.issuer ?? null,
+    notes: r.notes ?? null,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function upsertBoatDocument(boatId: string, doc: Omit<BoatDocument, "id" | "createdAt"> & { id?: string }) {
+  const payload = {
+    boat_id: boatId,
+    doc_type: doc.docType,
+    label: doc.label,
+    storage_path: doc.storagePath ?? null,
+    expiry_date: doc.expiryDate ?? null,
+    issued_date: doc.issuedDate ?? null,
+    issuer: doc.issuer ?? null,
+    notes: doc.notes ?? null,
+    updated_at: new Date().toISOString(),
+  };
+  if (doc.id) {
+    const { error } = await db().from("boat_documents").update(payload).eq("id", doc.id);
+    if (error) throw error;
+  } else {
+    const { error } = await db().from("boat_documents").insert(payload);
+    if (error) throw error;
+  }
+}
+
+export async function deleteBoatDocument(id: string) {
+  const { error } = await db().from("boat_documents").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function uploadBoatDocument(boatId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop() ?? "pdf";
+  const path = `boats/${boatId}/docs/${Date.now()}.${ext}`;
+  const { error } = await db().storage.from("boat-documents").upload(path, file, { upsert: false });
+  if (error) throw error;
+  return path;
+}
+
+export async function getBoatDocumentUrl(path: string): Promise<string> {
+  const { data, error } = await db().storage.from("boat-documents").createSignedUrl(path, 3600);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 // ─── Boat Systems ─────────────────────────────────────────────────────────────

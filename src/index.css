@@ -2003,3 +2003,261 @@ html[data-theme="niebla"] .form-select {
     flex-wrap: wrap;
   }
 }
+
+/* ─── Boat Detail Page ───────────────────────────────────────────────────── */
+
+.panel-card--clickable:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.boat-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 860px;
+}
+
+.boat-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ─── Tab bar ────────────────────────────────────────────────────────────── */
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  position: relative;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  background: none;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.4rem;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 0.6rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 0.3rem;
+}
+
+.tab-content {
+  min-height: 200px;
+}
+
+/* ─── Boat detail sections ───────────────────────────────────────────────── */
+
+.boat-detail-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.boat-detail-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  padding: 1rem 1.25rem;
+}
+
+.boat-detail-section--diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.boat-detail-section h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-soft);
+}
+
+.boat-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+
+.boat-detail-row:last-child { border-bottom: none; }
+
+.boat-detail-label { color: var(--text-soft); }
+.boat-detail-value { font-weight: 500; text-align: right; }
+
+/* ─── Polar table ────────────────────────────────────────────────────────── */
+
+.polar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.polar-table th,
+.polar-table td {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  text-align: right;
+}
+
+.polar-table th { background: var(--panel-alt, var(--panel)); font-weight: 600; }
+.polar-table td:first-child { text-align: left; font-weight: 500; }
+.polar-row-beat td, .polar-row-run td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+/* ─── Sail inventory ─────────────────────────────────────────────────────── */
+
+.sail-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.sail-row {
+  background: var(--surface, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  padding: 0.65rem 0.85rem;
+}
+
+.sail-row-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.sail-row-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.sail-row-details strong { color: var(--text); }
+
+.sail-row-notes {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  font-style: italic;
+}
+
+/* ─── Tanks ──────────────────────────────────────────────────────────────── */
+
+.tank-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.tank-card {
+  background: var(--surface, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  padding: 0.65rem 0.85rem;
+}
+
+.tank-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.tank-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+.tank-capacity {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tank-bar-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+}
+
+.tank-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.tank-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+/* ─── Documents ──────────────────────────────────────────────────────────── */
+
+.doc-row {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.doc-row:last-child { border-bottom: none; }
+
+.doc-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.doc-row-label { font-size: 0.88rem; font-weight: 500; }
+.doc-row-meta { margin: 0.15rem 0 0; font-size: 0.78rem; color: var(--text-soft); }
+
+.btn-danger {
+  padding: 0.42rem 0.85rem;
+  border: 1px solid var(--red, #ef4444);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--red, #ef4444);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-danger:hover {
+  background: var(--red, #ef4444);
+  color: #fff;
+}
