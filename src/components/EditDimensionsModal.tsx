@@ -9,15 +9,14 @@ type Props = {
   onClose: () => void;
 };
 
-type EditTab = "hull" | "rig" | "sails_areas" | "stability" | "sails_inv" | "polar";
+type EditTab = "hull" | "rig" | "sails_areas" | "sails_inv" | "polar";
 
 const EDIT_TABS: { key: EditTab; label: string }[] = [
-  { key: "hull",       label: "Casco" },
-  { key: "rig",        label: "Aparejo" },
-  { key: "sails_areas",label: "Superficies" },
-  { key: "stability",  label: "Estabilidad" },
-  { key: "sails_inv",  label: "Velas" },
-  { key: "polar",      label: "Polares" },
+  { key: "hull",        label: "Casco" },
+  { key: "rig",         label: "Aparejo" },
+  { key: "sails_areas", label: "Superficies" },
+  { key: "sails_inv",   label: "Velas" },
+  { key: "polar",       label: "Polares" },
 ];
 
 const SAIL_TYPES = [
@@ -119,7 +118,7 @@ export function EditDimensionsModal({ dims: initial, onSave, onClose }: Props) {
   }
 
   return (
-    <Modal title="Editar dimensiones y datos ORC" onClose={onClose} wide>
+    <Modal title="Editar dimensiones y aparejo" onClose={onClose} wide>
       <div className="form-stack">
         {/* inner tab bar */}
         <div className="tab-bar" style={{ marginBottom: "1rem" }}>
@@ -133,17 +132,18 @@ export function EditDimensionsModal({ dims: initial, onSave, onClose }: Props) {
 
         {tab === "hull" && (
           <div className="form-grid">
+            <InputField label="Diseñador" value={d.designer ?? ""} onChange={(e) => setStr("designer", e.target.value)} />
+            <InputField label="Constructor" value={d.builder ?? ""} onChange={(e) => setStr("builder", e.target.value)} />
+            <InputField label="Fecha de serie" value={d.seriesDate ?? ""} onChange={(e) => setStr("seriesDate", e.target.value)} />
+            <InputField label="Construcción del casco" value={d.hullConstruction ?? ""} onChange={(e) => setStr("hullConstruction", e.target.value)} />
             <InputField label="LOA — Eslora total (m)" type="number" value={n(d.loa)} onChange={(e) => set("loa", e.target.value)} />
             <InputField label="Manga máxima (m)" type="number" value={n(d.maxBeam)} onChange={(e) => set("maxBeam", e.target.value)} />
             <InputField label="Calado (m)" type="number" value={n(d.draft)} onChange={(e) => set("draft", e.target.value)} />
             <InputField label="Desplazamiento (kg)" type="number" value={n(d.displacement)} onChange={(e) => set("displacement", e.target.value)} />
-            <InputField label="Superficie mojada (m²)" type="number" value={n(d.wettedArea)} onChange={(e) => set("wettedArea", e.target.value)} />
-            <InputField label="DLR" type="number" value={n(d.dlr)} onChange={(e) => set("dlr", e.target.value)} />
-            <InputField label="Clase IMS" value={d.imsClass ?? ""} onChange={(e) => setStr("imsClass", e.target.value)} />
-            <InputField label="GPH" type="number" value={n(d.orcGph)} onChange={(e) => set("orcGph", e.target.value)} />
-            <InputField label="APH" type="number" value={n(d.orcAph)} onChange={(e) => set("orcAph", e.target.value)} />
-            <InputField label="CDL" type="number" value={n(d.orcCdl)} onChange={(e) => set("orcCdl", e.target.value)} />
-            <InputField label="Nº certificado ORC" value={d.certNo ?? ""} onChange={(e) => setStr("certNo", e.target.value)} />
+            <InputField label="Tipo hélice" value={d.propellerType ?? ""} onChange={(e) => setStr("propellerType", e.target.value)} />
+            <InputField label="Diámetro hélice (m)" type="number" value={n(d.propellerDiameter)} onChange={(e) => set("propellerDiameter", e.target.value)} />
+            <InputField label="Peso máximo tripulación (kg)" type="number" value={n(d.crewMaxWeight)} onChange={(e) => set("crewMaxWeight", e.target.value)} />
+            <InputField label="Peso mínimo tripulación (kg)" type="number" value={n(d.crewMinWeight)} onChange={(e) => set("crewMinWeight", e.target.value)} />
           </div>
         )}
 
@@ -156,12 +156,6 @@ export function EditDimensionsModal({ dims: initial, onSave, onClose }: Props) {
             <InputField label="J — Base triángulo proa (m)" type="number" value={n(d.J)} onChange={(e) => set("J", e.target.value)} />
             <InputField label="BAS — Boom sobre cubierta (m)" type="number" value={n(d.BAS)} onChange={(e) => set("BAS", e.target.value)} />
             <InputField label="TPS — Tangón (m)" type="number" value={n(d.TPS)} onChange={(e) => set("TPS", e.target.value)} />
-            <InputField label="TL — Trunk length (m)" type="number" value={n(d.TL)} onChange={(e) => set("TL", e.target.value)} />
-            <InputField label="MW — Ancho máx. palo (m)" type="number" value={n(d.MW)} onChange={(e) => set("MW", e.target.value)} />
-            <InputField label="GO — Offset botavara (m)" type="number" value={n(d.GO)} onChange={(e) => set("GO", e.target.value)} />
-            <InputField label="BD — Altura botavara (m)" type="number" value={n(d.BD)} onChange={(e) => set("BD", e.target.value)} />
-            <InputField label="MWT — Peso palo (kg)" type="number" value={n(d.MWT)} onChange={(e) => set("MWT", e.target.value)} />
-            <InputField label="MCG — CDG palo (m)" type="number" value={n(d.MCG)} onChange={(e) => set("MCG", e.target.value)} />
             <InputField label="Pares de barraganetes" type="number" value={n(d.spreadersCount)} onChange={(e) => set("spreadersCount", e.target.value)} />
             <SelectField label="Palo de carbono" value={b(d.carbonMast)} onChange={(e) => setBool("carbonMast", e.target.value)}>
               <option value="">—</option>
@@ -173,28 +167,19 @@ export function EditDimensionsModal({ dims: initial, onSave, onClose }: Props) {
               <option value="true">Sí</option>
               <option value="false">No</option>
             </SelectField>
+            <SelectField label="Enrollador mayor" value={b(d.mainsailFurler)} onChange={(e) => setBool("mainsailFurler", e.target.value)}>
+              <option value="">—</option>
+              <option value="true">Sí</option>
+              <option value="false">No</option>
+            </SelectField>
           </div>
         )}
 
         {tab === "sails_areas" && (
           <div className="form-grid">
-            <InputField label="Mayor medida (m²)" type="number" value={n(d.mainsailMeasured)} onChange={(e) => set("mainsailMeasured", e.target.value)} />
-            <InputField label="Mayor rated (m²)" type="number" value={n(d.mainsailRated)} onChange={(e) => set("mainsailRated", e.target.value)} />
-            <InputField label="Génova medida (m²)" type="number" value={n(d.headsailMeasured)} onChange={(e) => set("headsailMeasured", e.target.value)} />
-            <InputField label="Génova rated (m²)" type="number" value={n(d.headsailRated)} onChange={(e) => set("headsailRated", e.target.value)} />
-            <InputField label="Asimétrico medida (m²)" type="number" value={n(d.asymmetricMeasured)} onChange={(e) => set("asymmetricMeasured", e.target.value)} />
-            <InputField label="Asimétrico rated (m²)" type="number" value={n(d.asymmetricRated)} onChange={(e) => set("asymmetricRated", e.target.value)} />
-            <InputField label="Trysail (m²)" type="number" value={n(d.trysail)} onChange={(e) => set("trysail", e.target.value)} />
-            <InputField label="Foque de temporal (m²)" type="number" value={n(d.stormJib)} onChange={(e) => set("stormJib", e.target.value)} />
-            <InputField label="Foque gran viento (m²)" type="number" value={n(d.heavyJib)} onChange={(e) => set("heavyJib", e.target.value)} />
-          </div>
-        )}
-
-        {tab === "stability" && (
-          <div className="form-grid">
-            <InputField label="RM rated (kg·m)" type="number" value={n(d.rmRated)} onChange={(e) => set("rmRated", e.target.value)} />
-            <InputField label="Stability Index" type="number" value={n(d.stabilityIndex)} onChange={(e) => set("stabilityIndex", e.target.value)} />
-            <InputField label="Límite estabilidad positiva (°)" type="number" value={n(d.lps)} onChange={(e) => set("lps", e.target.value)} />
+            <InputField label="Mayor (m²)" type="number" value={n(d.mainsailMeasured)} onChange={(e) => set("mainsailMeasured", e.target.value)} />
+            <InputField label="Génova / Foque (m²)" type="number" value={n(d.headsailMeasured)} onChange={(e) => set("headsailMeasured", e.target.value)} />
+            <InputField label="Spinnaker / Asimétrico (m²)" type="number" value={n(d.asymmetricMeasured)} onChange={(e) => set("asymmetricMeasured", e.target.value)} />
           </div>
         )}
 

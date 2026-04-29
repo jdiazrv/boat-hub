@@ -163,6 +163,11 @@ export type Owner = {
 // ─── Boat dimensions (ORC schema) ────────────────────────────────────────────
 
 export type BoatDimensions = {
+  // Class / builder
+  designer?: string | null;
+  builder?: string | null;
+  seriesDate?: string | null;         // e.g. "01/2006"
+  hullConstruction?: string | null;   // e.g. "Cored"
   // Hull
   loa?: number | null;
   maxBeam?: number | null;
@@ -170,6 +175,13 @@ export type BoatDimensions = {
   displacement?: number | null;
   wettedArea?: number | null;
   dlr?: number | null;
+  imsL?: number | null;               // IMS L measurement
+  // Propeller
+  propellerType?: string | null;      // e.g. "Folding 3 blades"
+  propellerDiameter?: number | null;  // PRD in m
+  // Crew
+  crewMaxWeight?: number | null;
+  crewMinWeight?: number | null;
   // Rig (ORC measurement letters)
   P?: number | null;    // Mainsail hoist
   E?: number | null;    // Mainsail foot
@@ -198,15 +210,23 @@ export type BoatDimensions = {
   trysail?: number | null;
   stormJib?: number | null;
   heavyJib?: number | null;
-  // ORC ratings
+  // Sail limits
+  headsailLimit?: number | null;      // max number of headsails
+  spinnakersLimit?: number | null;    // max number of spinnakers
+  // ORC ratings & time allowances
   imsClass?: string | null;
   orcGph?: number | null;
   orcAph?: number | null;
   orcCdl?: number | null;
   certNo?: string | null;
+  certIssueDate?: string | null;
+  certValidUntil?: string | null;
+  orcDynamicAllowance?: number | null;   // %
+  orcAgeAllowance?: number | null;       // %
   spreadersCount?: number | null;
   carbonMast?: boolean | null;
   headsailFurler?: boolean | null;
+  mainsailFurler?: boolean | null;
   // Sail inventory
   sails?: SailInventoryItem[] | null;
   // VPP polar data (wind speeds 6,8,10,12,14,16,20 kt)
