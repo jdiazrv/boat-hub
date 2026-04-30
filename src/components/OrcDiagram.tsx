@@ -101,9 +101,9 @@ export function OrcDiagram({ dims, boatName, sailNumber }: Props) {
   const bowX      = mastX + J   * scale;   // bow = RIGHT
   const boomEndX  = mastX - E   * scale;   // boom = LEFT (toward stern)
   const boomY     = deckY - BAS * scale;
-  // IG/ISP capped at P so forestay attachment never exceeds masthead visually
-  const fsTopY    = deckY - Math.min(IG,  P) * scale;
-  const spkTopY   = deckY - Math.min(ISP, P) * scale;
+  // IG/ISP capped at 95% of P visually so génova/spi always start below masthead
+  const fsTopY    = deckY - Math.min(IG,  P * 0.95) * scale;
+  const spkTopY   = deckY - Math.min(ISP, P * 0.97) * scale;
 
   // ── Hull geometry: simple ORC trapezoid ──────────────────────────────────────
   // Bow (RIGHT): raked forward — deck overhangs keel (proa lanzada hacia el agua)
