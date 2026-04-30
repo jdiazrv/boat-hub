@@ -5,6 +5,7 @@ import { AppDataProvider } from "./providers/AppDataProvider";
 import { AuthProvider } from "./providers/AuthProvider";
 import { I18nProvider } from "./lib/i18n";
 import { initTheme } from "./lib/theme";
+import "leaflet/dist/leaflet.css";
 import "./index.css";
 
 initTheme();

@@ -4,7 +4,7 @@ import { LoadingOverlay } from "../components/LoadingOverlay";
 import * as db from "../lib/db";
 import type { Marina } from "../lib/types";
 import { CheckboxField, FormActions, FormGrid, FormSection, InputField, TextareaField } from "../components/FormField";
-import { LocationSearch } from "../components/LocationSearch";
+import { LocationSearchWithMap } from "../components/LocationSearch";
 import { Modal } from "../components/Modal";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
@@ -37,20 +37,11 @@ function MarinaForm({
   return (
     <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
       <FormSection title="Identificación">
-        <LocationSearch
+        <LocationSearchWithMap
           label="Buscar en mapa"
-          placeholder="Nombre de la marina, puerto…"
-          value={null}
-          onChange={() => {}}
-          onPick={(place) => setForm((f) => ({
-            ...f,
-            name: place.name || f.name,
-            country: place.country ?? f.country,
-            region: place.region ?? f.region,
-            address: place.address ?? f.address,
-            latitude: place.latitude ?? f.latitude,
-            longitude: place.longitude ?? f.longitude,
-          }))}
+          latitude={form.latitude}
+          longitude={form.longitude}
+          onPick={(place) => setForm((f) => ({ ...f, ...place }))}
         />
         <InputField label={t("name")} required value={form.name} onChange={(e) => set("name", e.target.value)} />
         <FormGrid>
