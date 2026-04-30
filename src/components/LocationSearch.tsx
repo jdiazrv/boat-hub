@@ -5,6 +5,8 @@ interface NominatimResult {
   display_name: string;
   name: string;
   type: string;
+  lat: string;
+  lon: string;
   address: {
     city?: string;
     town?: string;
@@ -13,26 +15,53 @@ interface NominatimResult {
     county?: string;
     state?: string;
     country?: string;
+    road?: string;
+    house_number?: string;
+    postcode?: string;
     marina?: string;
     harbour?: string;
     fuel?: string;
   };
 }
 
-function formatPlace(r: NominatimResult): string {
+export interface GeoPlace {
+  name: string;
+  country: string | null;
+  region: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+function toGeoPlace(r: NominatimResult): GeoPlace {
   const a = r.address;
-  const place = a.marina ?? a.harbour ?? a.fuel ?? r.name;
-  const city = a.city ?? a.town ?? a.village ?? a.municipality ?? a.county ?? "";
-  const country = a.country ?? "";
-  return [place, city, country].filter(Boolean).join(", ");
+  const placeName = a.marina ?? a.harbour ?? a.fuel ?? r.name;
+  const city = a.city ?? a.town ?? a.village ?? a.municipality ?? a.county ?? null;
+  const road = [a.road, a.house_number].filter(Boolean).join(" ") || null;
+  const addressParts = [road, a.postcode, city].filter(Boolean);
+  return {
+    name: placeName,
+    country: a.country ?? null,
+    region: a.state ?? city,
+    address: addressParts.join(", ") || null,
+    latitude: parseFloat(r.lat),
+    longitude: parseFloat(r.lon),
+  };
+}
+
+function formatPlace(r: NominatimResult): string {
+  const p = toGeoPlace(r);
+  return [p.name, p.region, p.country].filter(Boolean).join(", ");
 }
 
 export function LocationSearch({
-  value, onChange, label,
+  value, onChange, onPick, label, placeholder,
 }: {
   value: string | null;
   onChange: (v: string | null) => void;
+  onPick?: (place: GeoPlace) => void;
   label: string;
+  placeholder?: string;
 }) {
   const [query, setQuery] = useState(value ?? "");
   const [results, setResults] = useState<NominatimResult[]>([]);
@@ -41,7 +70,6 @@ export function LocationSearch({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // sync external value resets (e.g. form open)
   useEffect(() => { setQuery(value ?? ""); }, [value]);
 
   useEffect(() => {
@@ -64,7 +92,6 @@ export function LocationSearch({
     }, 500);
   }, [query]);
 
-  // close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
@@ -74,9 +101,11 @@ export function LocationSearch({
   }, []);
 
   function pick(r: NominatimResult) {
-    const label = formatPlace(r);
-    setQuery(label);
-    onChange(label);
+    const place = toGeoPlace(r);
+    const displayLabel = formatPlace(r);
+    setQuery(displayLabel);
+    onChange(displayLabel);
+    onPick?.(place);
     setOpen(false);
     setResults([]);
   }
@@ -94,7 +123,7 @@ export function LocationSearch({
           className="form-input"
           type="text"
           value={query}
-          placeholder="Buscar puerto, marina…"
+          placeholder={placeholder ?? "Buscar puerto, marina…"}
           onChange={(e) => handleChange(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
           autoComplete="off"

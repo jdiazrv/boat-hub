@@ -4,6 +4,7 @@ import { LoadingOverlay } from "../components/LoadingOverlay";
 import * as db from "../lib/db";
 import type { Shipyard } from "../lib/types";
 import { CheckboxField, FormActions, FormGrid, FormSection, InputField, TextareaField } from "../components/FormField";
+import { LocationSearch } from "../components/LocationSearch";
 import { Modal } from "../components/Modal";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
@@ -39,6 +40,21 @@ function ShipyardForm({
   return (
     <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
       <FormSection title="Identificación">
+        <LocationSearch
+          label="Buscar en mapa"
+          placeholder="Nombre del varadero, astillero…"
+          value={null}
+          onChange={() => {}}
+          onPick={(place) => setForm((f) => ({
+            ...f,
+            name: place.name || f.name,
+            country: place.country ?? f.country,
+            region: place.region ?? f.region,
+            address: place.address ?? f.address,
+            latitude: place.latitude ?? f.latitude,
+            longitude: place.longitude ?? f.longitude,
+          }))}
+        />
         <InputField label={t("name")} required value={form.name} onChange={(e) => set("name", e.target.value)} />
         <FormGrid>
           <InputField label={t("country")} value={form.country ?? ""} onChange={(e) => set("country", e.target.value || null)} />
