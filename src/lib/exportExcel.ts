@@ -187,6 +187,7 @@ const SECTIONS = [
       { label: "Unidad", value: (r) => r.unit },
       { label: "€/unidad", value: (r) => r.pricePerUnit },
       { label: "Coste total (€)", value: (r) => r.totalCost },
+      { label: "Lugar", value: (r) => r.location },
       { label: "Proveedor", value: (r) => r.supplier },
       { label: "Horas motor", value: (r) => r.engineHoursAtFuelling },
       { label: "Notas", value: (r) => r.notes },

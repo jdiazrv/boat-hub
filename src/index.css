@@ -2122,6 +2122,18 @@ html[data-theme="niebla"] .form-select {
 .boat-detail-label { color: var(--text-soft); }
 .boat-detail-value { font-weight: 500; text-align: right; }
 
+.empty-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.empty-inline .data-table-cell-muted {
+  margin: 0;
+}
+
 /* ─── Polar table ────────────────────────────────────────────────────────── */
 
 .polar-table {
@@ -2271,4 +2283,62 @@ html[data-theme="niebla"] .form-select {
 
 .boat-detail-section-head h4 {
   margin: 0;
+}
+
+/* ── LocationSearch autocomplete ────────────────────────────────────────── */
+.location-search {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.location-search-input-wrap {
+  position: relative;
+}
+
+.location-search-input-wrap .form-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.location-search-spinner {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  animation: spin 1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+.location-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  margin: 2px 0 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: var(--card-bg, var(--sidebar-bg, #1e2533));
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.location-search-dropdown li {
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.location-search-dropdown li:hover {
+  background: var(--input-bg);
 }

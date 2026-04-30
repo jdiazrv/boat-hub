@@ -382,6 +382,7 @@ export function exportAllToHtml(
         { key: "fuelledAt", label: "Fecha", render: (row) => date(row.fuelledAt) },
         { key: "quantity", label: "Cantidad", render: (row) => `${row.quantity} ${row.unit}` },
         { key: "totalCost", label: "Coste", className: "cost-cell", render: (row) => money(row.totalCost) },
+        { key: "location", label: "Lugar" },
         { key: "supplier", label: "Proveedor" },
         { key: "notes", label: "Notas", className: "notes" },
       ] satisfies Column<FuelLog>[],

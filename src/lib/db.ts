@@ -1902,7 +1902,7 @@ export async function fetchFuelLogs(boatScope?: string | string[]): Promise<Fuel
   let q = db()
     .from("fuel_logs")
     .select(
-      `id, boat_id, logged_at, fuel_type, quantity, unit, cost, supplier, engine_hours, notes,
+      `id, boat_id, logged_at, fuel_type, quantity, unit, cost, supplier, location, engine_hours, notes,
        boats ( name )`
     )
     .order("logged_at", { ascending: false });
@@ -1920,6 +1920,7 @@ export async function fetchFuelLogs(boatScope?: string | string[]): Promise<Fuel
     pricePerUnit: null,
     totalCost: r.cost,
     supplier: r.supplier,
+    location: r.location ?? null,
     engineHoursAtFuelling: r.engine_hours,
     notes: r.notes,
   }));
@@ -1934,6 +1935,7 @@ export async function createFuelLog(payload: Omit<FuelLog, "id" | "boatName">) {
     unit: payload.unit,
     cost: payload.totalCost,
     supplier: payload.supplier,
+    location: payload.location,
     engine_hours: payload.engineHoursAtFuelling,
     notes: payload.notes,
   });
@@ -1948,6 +1950,7 @@ export async function updateFuelLog(id: string, payload: Partial<Omit<FuelLog, "
     unit: payload.unit,
     cost: payload.totalCost,
     supplier: payload.supplier,
+    location: payload.location,
     engine_hours: payload.engineHoursAtFuelling,
     notes: payload.notes,
   }).eq("id", id);

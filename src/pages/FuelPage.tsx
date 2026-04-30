@@ -4,6 +4,7 @@ import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowChe
 import * as db from "../lib/db";
 import type { FuelLog } from "../lib/types";
 import { FormActions, FormGrid, FormSection, InputField, SelectField, TextareaField } from "../components/FormField";
+import { LocationSearch } from "../components/LocationSearch";
 import { Modal } from "../components/Modal";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
@@ -48,6 +49,9 @@ function FuelLogForm({
           <InputField label={t("totalCost")} type="number" value={form.totalCost ?? ""} onChange={(e) => set("totalCost", e.target.value ? Number(e.target.value) : null)} />
           <InputField label={t("supplier")} value={form.supplier ?? ""} onChange={(e) => set("supplier", e.target.value || null)} />
           <InputField label={t("engineHours")} type="number" value={form.engineHoursAtFuelling ?? ""} onChange={(e) => set("engineHoursAtFuelling", e.target.value ? Number(e.target.value) : null)} />
+          <div style={{ gridColumn: "1 / -1" }}>
+            <LocationSearch label="Lugar de repostaje" value={form.location ?? null} onChange={(v) => set("location", v)} />
+          </div>
         </FormGrid>
         <TextareaField label={t("notes")} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
@@ -78,7 +82,7 @@ export function FuelPage() {
     boatId: activeBoatId ?? "", fuelledAt: new Date().toISOString().slice(0, 10),
     fuelType: "Diesel", quantity: 0, unit: "L",
     pricePerUnit: null, totalCost: null, supplier: null,
-    engineHoursAtFuelling: null, notes: null,
+    location: null, engineHoursAtFuelling: null, notes: null,
   };
 
   function openCreate() { setEditing(null); setError(null); setModal("create"); }
@@ -165,7 +169,7 @@ export function FuelPage() {
         <div className="data-table">
           <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 1fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((l) => l.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>Fecha</span><span>Tipo</span><span>Cantidad</span><span>€/u</span><span>Proveedor</span><span>Horas</span><span></span>
+            <span>Fecha</span><span>Tipo</span><span>Cantidad</span><span>€/u</span><span>Lugar</span><span>Horas</span><span></span>
           </div>
           {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay repostajes registrados.</p></div>}
           {filtered.map((l) => (
@@ -175,7 +179,7 @@ export function FuelPage() {
               <span><span className="pill">{l.fuelType}</span></span>
               <strong>{l.quantity} {l.unit}</strong>
               <span className="data-table-cell-muted">{l.pricePerUnit != null ? `${l.pricePerUnit}` : "-"}</span>
-              <span className="data-table-cell-muted">{l.supplier ?? "-"}</span>
+              <span className="data-table-cell-muted">{l.location ?? l.supplier ?? "-"}</span>
               <span className="data-table-cell-muted">{l.engineHoursAtFuelling != null ? `${l.engineHoursAtFuelling} h` : "-"}</span>
               <div className="row-actions">
                 {isSupabaseConfigured && (
@@ -196,6 +200,7 @@ export function FuelPage() {
               ? { boatId: editing.boatId, fuelledAt: editing.fuelledAt, fuelType: editing.fuelType,
                   quantity: editing.quantity, unit: editing.unit, pricePerUnit: editing.pricePerUnit,
                   totalCost: editing.totalCost, supplier: editing.supplier,
+                  location: editing.location,
                   engineHoursAtFuelling: editing.engineHoursAtFuelling, notes: editing.notes }
               : EMPTY}
             boatName={boatName}

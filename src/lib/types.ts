@@ -619,6 +619,7 @@ export type FuelLog = {
   pricePerUnit: number | null;
   totalCost: number | null;
   supplier: string | null;
+  location: string | null;
   engineHoursAtFuelling: number | null;
   notes: string | null;
 };
