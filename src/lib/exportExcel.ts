@@ -60,6 +60,7 @@ const SECTIONS = [
       { label: "Fecha realizada", value: (r) => r.doneDate },
       { label: "Responsable", value: (r) => r.responsible },
       { label: "Realizado por", value: (r) => r.performedBy },
+      { label: "Lugar", value: (r) => r.location },
       { label: "Coste (€)", value: (r) => r.cost },
       { label: "Horas motor", value: (r) => r.engineHours },
       { label: "Descripción", value: (r) => r.description },

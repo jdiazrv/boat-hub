@@ -4,6 +4,7 @@ import { LoadingOverlay } from "../components/LoadingOverlay";
 import * as db from "../lib/db";
 import type { BoatComponent, BoatSystem, HaulOut, HourCounter, MaintenanceKind, MaintenanceTask, MaintenanceTemplate, TaskAttachment } from "../lib/types";
 import { FormActions, FormGrid, FormSection, InputField, SelectField, TextareaField } from "../components/FormField";
+import { LocationSearch } from "../components/LocationSearch";
 import { Modal } from "../components/Modal";
 import { AttachmentGallery } from "../components/AttachmentGallery";
 import { sysName, useI18n } from "../lib/i18n";
@@ -262,6 +263,9 @@ function TaskForm({
             onChange={(e) => set("engineHours", e.target.value ? Number(e.target.value) : null)} />
           <InputField label={t("cost")} type="number" value={form.cost ?? ""}
             onChange={(e) => set("cost", e.target.value ? Number(e.target.value) : null)} />
+          <div style={{ gridColumn: "1 / -1" }}>
+            <LocationSearch label="Lugar donde se realiza" value={form.location ?? null} onChange={(v) => set("location", v)} />
+          </div>
         </FormGrid>
         <TextareaField label={t("notes")} value={form.notes ?? ""}
           onChange={(e) => set("notes", e.target.value || null)} />
@@ -383,7 +387,7 @@ export function MaintenancePage() {
     templateId: null, boatId: activeBoatId ?? "", boatSystemId: null, boatComponentId: null, haulOutId: null,
     title: "", description: null, kind: "corrective", status: "pending",
     priority: "medium", dueDate: null, doneDate: null, responsible: null,
-    performedBy: null, engineHours: null, cost: null, notes: null,
+    performedBy: null, location: null, engineHours: null, cost: null, notes: null,
   };
 
   function openCreate() { setEditing(null); setEditingAttachments([]); setError(null); setModal("create"); }
@@ -556,10 +560,17 @@ export function MaintenancePage() {
             <div className="data-table-row" key={task.id} style={{ gridTemplateColumns: "1.5rem 7rem 3fr 1.4fr 6rem 6rem 5.5rem auto", alignItems: "center", background: selectMode && selected.has(task.id) ? "color-mix(in srgb, var(--danger) 6%, transparent)" : undefined }}>
               <SelectRowCheckbox selectMode={selectMode} id={task.id} selected={selected} onToggle={toggleOne} disabled={deleting} />
               <span style={{ fontSize: "0.82rem", ...dateStyle }}>{dateLabel}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
-                {task.hasPhoto && <span title="Tiene fotos" style={{ fontSize: "0.75rem", flexShrink: 0 }}>🖼</span>}
-                {task.hasFile && <span title="Tiene archivos" style={{ fontSize: "0.75rem", flexShrink: 0 }}>📎</span>}
+              <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>
+                  {task.hasPhoto && <span title="Tiene fotos" style={{ fontSize: "0.75rem", flexShrink: 0 }}>🖼</span>}
+                  {task.hasFile && <span title="Tiene archivos" style={{ fontSize: "0.75rem", flexShrink: 0 }}>📎</span>}
+                </span>
+                {task.location && (
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    📍 {task.location}
+                  </span>
+                )}
               </span>
               <span className="data-table-cell-muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.systemName}</span>
               <span className={`pill kind-${task.kind}`}>{t(`kind_${task.kind}`)}</span>
@@ -588,7 +599,7 @@ export function MaintenancePage() {
                   haulOutId: editing.haulOutId, title: editing.title, description: editing.description,
                   kind: editing.kind, status: editing.status, priority: editing.priority,
                   dueDate: editing.dueDate, doneDate: editing.doneDate, responsible: editing.responsible,
-                  performedBy: editing.performedBy, engineHours: editing.engineHours, cost: editing.cost, notes: editing.notes,
+                  performedBy: editing.performedBy, location: editing.location, engineHours: editing.engineHours, cost: editing.cost, notes: editing.notes,
                 }
               : EMPTY}
             boatName={boatName}

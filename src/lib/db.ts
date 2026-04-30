@@ -962,7 +962,7 @@ export async function fetchMaintenanceTasks(boatScope?: string | string[], haulO
     .select(
       `id, template_id, boat_id, boat_system_id, boat_component_id, haul_out_id, title, description,
        kind, status, priority, due_date, completed_at, responsible, performed_by,
-       engine_hours, estimated_cost, notes, updated_at,
+       location, engine_hours, estimated_cost, notes, updated_at,
        boats ( name ),
        boat_systems ( system_catalog ( name_es, name_en ) )`
     )
@@ -1007,6 +1007,7 @@ export async function fetchMaintenanceTasks(boatScope?: string | string[], haulO
     doneDate: r.completed_at ? r.completed_at.slice(0, 10) : null,
     responsible: r.responsible,
     performedBy: r.performed_by,
+    location: r.location ?? null,
     engineHours: r.engine_hours,
     cost: r.estimated_cost,
     notes: r.notes,
@@ -1033,6 +1034,7 @@ export async function createMaintenanceTask(payload: Omit<MaintenanceTask, "id" 
     completed_at: payload.doneDate ?? null,
     responsible: payload.responsible,
     performed_by: payload.performedBy,
+    location: payload.location,
     engine_hours: payload.engineHours,
     estimated_cost: payload.cost,
     notes: payload.notes,
@@ -1055,6 +1057,7 @@ export async function updateMaintenanceTask(id: string, payload: Partial<Omit<Ma
     completed_at: payload.doneDate ?? null,
     responsible: payload.responsible,
     performed_by: payload.performedBy,
+    location: payload.location,
     engine_hours: payload.engineHours,
     estimated_cost: payload.cost,
     notes: payload.notes,

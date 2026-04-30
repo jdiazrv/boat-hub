@@ -388,6 +388,7 @@ export type MaintenanceTask = {
   doneDate: string | null;
   responsible: string | null;
   performedBy: string | null;
+  location: string | null;
   engineHours: number | null;
   cost: number | null;
   notes: string | null;

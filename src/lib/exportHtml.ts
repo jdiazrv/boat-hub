@@ -292,6 +292,7 @@ export function exportAllToHtml(
         { key: "priority", label: "Prioridad" },
         { key: "dueDate", label: "Prevista", render: (row) => date(row.dueDate) },
         { key: "doneDate", label: "Realizada", render: (row) => date(row.doneDate) },
+        { key: "location", label: "Lugar" },
         { key: "cost", label: "Coste", className: "cost-cell", render: (row) => money(row.cost) },
         { key: "notes", label: "Notas", className: "notes" },
       ] satisfies Column<MaintenanceTask>[],
