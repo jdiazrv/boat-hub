@@ -1,5 +1,6 @@
 import type { BoatDimensions, SailInventoryItem } from "../lib/types";
 import { OrcDiagram } from "./OrcDiagram";
+import { PolarChart } from "./PolarChart";
 import { useI18n } from "../lib/i18n";
 
 const WIND_SPEEDS = [6, 8, 10, 12, 14, 16, 20];
@@ -181,36 +182,39 @@ export function BoatTabDimensions({ dims, canEdit, onEdit }: {
       <section className="boat-detail-section">
         <h4>{t("sectionPolarTable")}</h4>
         {hasPolar ? (
-          <div style={{ overflowX: "auto" }}>
-            <table className="polar-table">
-              <thead>
-                <tr>
-                  <th>TWA</th>
-                  {winds.map((w) => <th key={w}>{w} kt</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {safeDims.polarBeatAngles && (
-                  <tr className="polar-row-beat">
-                    <td>↑ {safeDims.polarBeatAngles.map((a) => `${a}°`).join(" / ")}</td>
-                    {(safeDims.polarBeatVmg ?? []).map((v, i) => <td key={i}>{v}</td>)}
+          <>
+            <PolarChart dims={safeDims} />
+            <div style={{ overflowX: "auto" }}>
+              <table className="polar-table">
+                <thead>
+                  <tr>
+                    <th>TWA</th>
+                    {winds.map((w) => <th key={w}>{w} kt</th>)}
                   </tr>
-                )}
-                {safeDims.polarRows!.map((row) => (
-                  <tr key={row.twa}>
-                    <td><strong>{row.twa}°</strong></td>
-                    {row.speeds.map((s, i) => <td key={i}>{s}</td>)}
-                  </tr>
-                ))}
-                {safeDims.polarRunVmg && (
-                  <tr className="polar-row-run">
-                    <td>↓ {t("polarRunVmg")}</td>
-                    {safeDims.polarRunVmg.map((v, i) => <td key={i}>{v}</td>)}
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {safeDims.polarBeatAngles && (
+                    <tr className="polar-row-beat">
+                      <td>↑ {safeDims.polarBeatAngles.map((a) => `${a}°`).join(" / ")}</td>
+                      {(safeDims.polarBeatVmg ?? []).map((v, i) => <td key={i}>{v}</td>)}
+                    </tr>
+                  )}
+                  {safeDims.polarRows!.map((row) => (
+                    <tr key={row.twa}>
+                      <td><strong>{row.twa}°</strong></td>
+                      {row.speeds.map((s, i) => <td key={i}>{s}</td>)}
+                    </tr>
+                  ))}
+                  {safeDims.polarRunVmg && (
+                    <tr className="polar-row-run">
+                      <td>↓ {t("polarRunVmg")}</td>
+                      {safeDims.polarRunVmg.map((v, i) => <td key={i}>{v}</td>)}
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <p className="data-table-cell-muted">{t("noPolarData")}</p>
         )}
