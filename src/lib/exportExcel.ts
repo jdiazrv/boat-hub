@@ -1,7 +1,7 @@
 import type {
   Boat,
   MaintenanceTask, HaulOut, Observation, FutureAction, FuturePurchase,
-  InventoryItem, HourLog, FuelLog, Marina, Shipyard,
+  InventoryItem, HourLog, FuelLog, Marina, Shipyard, SailInventoryItem,
 } from "./types";
 import templateUrl from "../assets/template.xlsx?url";
 
@@ -530,6 +530,25 @@ export async function exportAllToExcel(
       sheetName: section.sheetName,
       xml: worksheetXml(section.rows(data) as any[], section.columns as Column<any>[]),
     }));
+
+  const sails = boat?.dimensions?.sails ?? [];
+  if (sails.length > 0) {
+    const sailColumns: Column<SailInventoryItem>[] = [
+      { label: "Nombre", value: (r) => r.label },
+      { label: "Tipo", value: (r) => r.sailType },
+      { label: "Número de vela", value: (r) => r.sailNumber ?? null },
+      { label: "Estado", value: (r) => r.condition ?? null },
+      { label: "Área (m²)", value: (r) => r.area ?? null },
+      { label: "Grátil (m)", value: (r) => r.luff ?? null },
+      { label: "Pujamen (m)", value: (r) => r.foot ?? null },
+      { label: "Baluma (m)", value: (r) => r.leech ?? null },
+      { label: "Material", value: (r) => r.material ?? null },
+      { label: "Fabricante", value: (r) => r.manufacturer ?? null },
+      { label: "Año", value: (r) => r.year ?? null },
+      { label: "Notas", value: (r) => r.notes ?? null },
+    ];
+    sections.push({ sheetName: "Velas", xml: worksheetXml(sails, sailColumns) });
+  }
   const response = await fetch(TEMPLATE_URL);
   if (!response.ok) throw new Error("No se pudo cargar la plantilla Excel");
   const templateBytes = new Uint8Array(await response.arrayBuffer());

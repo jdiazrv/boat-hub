@@ -1,4 +1,4 @@
-import type { BoatDimensions, SailInventoryItem } from "../lib/types";
+import type { BoatDimensions } from "../lib/types";
 import { OrcDiagram } from "./OrcDiagram";
 import { useI18n } from "../lib/i18n";
 
@@ -25,31 +25,6 @@ function Section({ title, values, noDataLabel, children }: { title: string; valu
   );
 }
 
-function SailRow({ sail, labels }: { sail: SailInventoryItem; labels: Record<string, string> }) {
-  return (
-    <div className="sail-row">
-      <div className="sail-row-header">
-        <strong>{sail.label}</strong>
-        <span className="pill" style={{ fontSize: "0.75rem" }}>{labels[sail.sailType] ?? sail.sailType}</span>
-        {sail.condition && <span className="pill" style={{ fontSize: "0.72rem", opacity: 0.7 }}>{labels[sail.condition] ?? sail.condition}</span>}
-      </div>
-      <div className="sail-row-details">
-        {sail.area      != null && <span>{labels.area}: <strong>{sail.area} m²</strong></span>}
-        {sail.luff      != null && <span>{labels.luff}: <strong>{sail.luff} m</strong></span>}
-        {sail.foot      != null && <span>{labels.foot}: <strong>{sail.foot} m</strong></span>}
-        {sail.leech     != null && <span>{labels.leech}: <strong>{sail.leech} m</strong></span>}
-        {sail.slu       != null && <span>SLU: <strong>{sail.slu} m</strong></span>}
-        {sail.sle       != null && <span>SLE: <strong>{sail.sle} m</strong></span>}
-        {sail.sl        != null && <span>SL: <strong>{sail.sl} m</strong></span>}
-        {sail.shw       != null && <span>SHW: <strong>{sail.shw} m</strong></span>}
-        {sail.sfl       != null && <span>SFL: <strong>{sail.sfl} m</strong></span>}
-        {sail.material  && <span>{labels.material}: <strong>{sail.material}</strong></span>}
-        {sail.year      != null && <span>{labels.year}: <strong>{sail.year}</strong></span>}
-      </div>
-      {sail.notes && <p className="sail-row-notes">{sail.notes}</p>}
-    </div>
-  );
-}
 
 export function BoatTabDimensions({ dims, canEdit, onEdit }: {
   dims: BoatDimensions;
@@ -58,33 +33,10 @@ export function BoatTabDimensions({ dims, canEdit, onEdit }: {
 }) {
   const { t } = useI18n();
   const safeDims = dims ?? {};
-  const sails = safeDims.sails ?? [];
   const hasAnyDimension = Object.values(safeDims).some((value) => {
     if (Array.isArray(value)) return value.length > 0;
     return value !== null && value !== undefined && value !== "";
   });
-
-  const sailTypeLabels: Record<string, string> = {
-    mainsail:       t("fieldMainsailArea"),
-    headsail:       t("fieldHeadsailArea"),
-    spinnaker_sym:  "Spinnaker simétrico",
-    spinnaker_asym: "Spinnaker asimétrico",
-    code_zero:      "Code Zero",
-    gennaker:       "Gennaker",
-    trysail:        "Trysail",
-    storm_jib:      "Storm jib",
-    other:          t("boatTypeOther"),
-    new:            t("sailConditionNew"),
-    good:           t("sailConditionGood"),
-    fair:           t("sailConditionFair"),
-    worn:           t("sailConditionWorn"),
-    area:           t("fieldArea"),
-    luff:           t("fieldLuff"),
-    foot:           t("fieldFoot"),
-    leech:          t("fieldLeech"),
-    material:       t("fieldMaterial"),
-    year:           t("fieldSailYear"),
-  };
 
   const noData = t("noData");
 
@@ -154,24 +106,6 @@ export function BoatTabDimensions({ dims, canEdit, onEdit }: {
         <Row label={t("fieldMainsailFurler")} value={safeDims.mainsailFurler ? t("yes") : safeDims.mainsailFurler === false ? t("no") : null} />
       </Section>
 
-      {/* ── Sail areas ────────────────────────────────────────────────── */}
-      <Section title={t("sectionSailAreas")} noDataLabel={noData} values={[safeDims.mainsailMeasured, safeDims.headsailMeasured, safeDims.asymmetricMeasured]}>
-        <Row label={t("fieldMainsailArea")} value={safeDims.mainsailMeasured} unit="m²" />
-        <Row label={t("fieldHeadsailArea")} value={safeDims.headsailMeasured} unit="m²" />
-        <Row label={t("fieldAsymmetricArea")} value={safeDims.asymmetricMeasured} unit="m²" />
-      </Section>
-
-      {/* ── Sail inventory ────────────────────────────────────────────── */}
-      <section className="boat-detail-section">
-        <h4>{t("sectionSailInventory")}</h4>
-        {sails.length > 0 ? (
-          <div className="sail-list">
-            {sails.map((s) => <SailRow key={s.id} sail={s} labels={sailTypeLabels} />)}
-          </div>
-        ) : (
-          <p className="data-table-cell-muted">{noData}</p>
-        )}
-      </section>
 
     </div>
   );

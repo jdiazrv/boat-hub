@@ -7,6 +7,7 @@ import { BoatTabDimensions } from "../components/BoatTabDimensions";
 import { BoatTabTanks } from "../components/BoatTabTanks";
 import { BoatTabDocuments } from "../components/BoatTabDocuments";
 import { BoatTabPolars } from "../components/BoatTabPolars";
+import { BoatTabSails } from "../components/BoatTabSails";
 import { EditBoatGeneralModal } from "../components/EditBoatGeneralModal";
 import { EditDimensionsModal } from "../components/EditDimensionsModal";
 import { EditTanksModal } from "../components/EditTanksModal";
@@ -14,7 +15,7 @@ import { EditIdentifiersModal } from "../components/EditIdentifiersModal";
 import { flagEmoji } from "../lib/flags";
 import { useI18n } from "../lib/i18n";
 
-type Tab = "general" | "dimensions" | "polars" | "tanks" | "documents";
+type Tab = "general" | "dimensions" | "polars" | "sails" | "tanks" | "documents";
 
 export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUpdated }: {
   boat: Boat;
@@ -81,6 +82,7 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
     { key: "general",    label: t("tabGeneral") },
     { key: "dimensions", label: t("tabDimensions") },
     { key: "polars",     label: t("tabPolars") },
+    { key: "sails",      label: t("tabSails") },
     { key: "tanks",      label: t("tabTanks") },
     { key: "documents",  label: t("tabDocuments") },
   ];
@@ -133,6 +135,14 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
 
         {tab === "dimensions" && (
           <BoatTabDimensions
+            dims={boat.dimensions ?? {}}
+            canEdit={canEdit}
+            onEdit={() => setEditModal("dimensions")}
+          />
+        )}
+
+        {tab === "sails" && (
+          <BoatTabSails
             dims={boat.dimensions ?? {}}
             canEdit={canEdit}
             onEdit={() => setEditModal("dimensions")}

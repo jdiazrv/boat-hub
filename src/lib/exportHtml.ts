@@ -10,6 +10,7 @@ import type {
   Marina,
   Observation,
   Shipyard,
+  SailInventoryItem,
 } from "./types";
 
 type ExportHtmlData = {
@@ -405,10 +406,32 @@ export function exportAllToHtml(
       empty: "No hay marinas ni varaderos.",
     },
   ];
-  const panels = allPanels.filter((item) => {
+  const filteredPanels = allPanels.filter((item) => {
     if (item.id === "directories") return includes("marinas") || includes("shipyards");
     return includes(item.sectionKey as ExportSectionKey);
   });
+
+  const sails = boat?.dimensions?.sails ?? [];
+  const sailsPanel = sails.length > 0 ? {
+    id: "sails",
+    title: "Velas",
+    rows: sails,
+    columns: [
+      { key: "label" as keyof SailInventoryItem, label: "Nombre", className: "item-name" },
+      { key: "sailType" as keyof SailInventoryItem, label: "Tipo" },
+      { key: "condition" as keyof SailInventoryItem, label: "Estado" },
+      { key: "area" as keyof SailInventoryItem, label: "Área (m²)" },
+      { key: "luff" as keyof SailInventoryItem, label: "Grátil (m)" },
+      { key: "foot" as keyof SailInventoryItem, label: "Pujamen (m)" },
+      { key: "leech" as keyof SailInventoryItem, label: "Baluma (m)" },
+      { key: "material" as keyof SailInventoryItem, label: "Material" },
+      { key: "year" as keyof SailInventoryItem, label: "Año" },
+      { key: "notes" as keyof SailInventoryItem, label: "Notas", className: "notes" },
+    ] satisfies Column<SailInventoryItem>[],
+    empty: "No hay inventario de velas.",
+  } : null;
+
+  const panels = sailsPanel ? [sailsPanel, ...filteredPanels] : filteredPanels;
 
   const html = `<!DOCTYPE html>
 <html lang="es">

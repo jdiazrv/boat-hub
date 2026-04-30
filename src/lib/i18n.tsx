@@ -233,6 +233,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     tabGeneral: "General",
     tabDimensions: "Dimensiones",
     tabPolars: "Polares",
+    tabSails: "Velas",
     tabTanks: "Tanques",
     tabDocuments: "Documentos",
     // Boat general section headers
@@ -675,6 +676,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     tabGeneral: "General",
     tabDimensions: "Dimensions",
     tabPolars: "Polars",
+    tabSails: "Sails",
     tabTanks: "Tanks",
     tabDocuments: "Documents",
     // Boat general section headers
