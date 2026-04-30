@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useI18n } from "../lib/i18n";
 
 type FieldProps = {
   label: string;
@@ -85,13 +86,14 @@ type FormActionsProps = {
 
 export function FormActions({
   onCancel,
-  submitLabel = "Guardar",
+  submitLabel,
   loading,
   disabled,
   danger,
   onDanger,
-  dangerLabel = "Eliminar",
+  dangerLabel,
 }: FormActionsProps) {
+  const { t } = useI18n();
   return (
     <div className="form-actions">
       {danger && onDanger && (
@@ -101,15 +103,15 @@ export function FormActions({
           onClick={onDanger}
           disabled={loading}
         >
-          {dangerLabel}
+          {dangerLabel ?? t("delete")}
         </button>
       )}
       <div className="form-actions-right">
         <button type="button" className="btn-ghost" onClick={onCancel} disabled={loading}>
-          Cancelar
+          {t("cancel")}
         </button>
         <button type="submit" className="btn-primary" disabled={loading || disabled}>
-          {loading ? "Guardando…" : submitLabel}
+          {loading ? t("saving") : (submitLabel ?? t("save"))}
         </button>
       </div>
     </div>

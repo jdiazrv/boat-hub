@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../lib/i18n";
 
 // ─── useSelectMode ────────────────────────────────────────────────────────────
 // Hook that encapsulates all multi-select state logic.
@@ -40,15 +41,16 @@ export function SelectModeHeaderButtons({
   selectMode: boolean;
   onEnter: () => void;
   onCancel: () => void;
-  children?: React.ReactNode; // primary action button(s), hidden in select mode
+  children?: React.ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <div style={{ display: "flex", gap: "0.5rem" }}>
       {!selectMode && (
-        <button className="btn-ghost" type="button" onClick={onEnter}>Seleccionar</button>
+        <button className="btn-ghost" type="button" onClick={onEnter}>{t("selectMode")}</button>
       )}
       {selectMode && (
-        <button className="btn-ghost" type="button" onClick={onCancel}>Cancelar</button>
+        <button className="btn-ghost" type="button" onClick={onCancel}>{t("cancelSelection")}</button>
       )}
       {!selectMode && children}
     </div>
@@ -129,10 +131,12 @@ export function BulkDeleteBar({
   onCancel: () => void;
   label?: string; // e.g. "observación" → "3 observaciones"
 }) {
+  const { t } = useI18n();
+
   if (!selectMode || selected.size === 0) return null;
 
   const count = selected.size;
-  const noun = label ?? "elemento";
+  const noun = label ?? t("selectMode").toLowerCase();
   const plural = count !== 1 ? `${noun}s` : noun;
 
   return (
@@ -149,7 +153,7 @@ export function BulkDeleteBar({
         onClick={onCancel}
         disabled={deleting}
       >
-        Cancelar
+        {t("cancelSelection")}
       </button>
       <button
         className="btn-primary"
@@ -157,7 +161,7 @@ export function BulkDeleteBar({
         onClick={onDelete}
         disabled={deleting}
       >
-        {deleting ? "Eliminando…" : "Eliminar"}
+        {deleting ? t("deleting") : t("delete")}
       </button>
     </div>
   );

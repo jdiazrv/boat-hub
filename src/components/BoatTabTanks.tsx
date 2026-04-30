@@ -1,13 +1,5 @@
 import type { BoatTank, TankType } from "../lib/types";
-
-const TANK_LABELS: Record<TankType, string> = {
-  diesel:      "Gasoil",
-  fresh_water: "Agua dulce",
-  grey_water:  "Aguas grises",
-  black_water: "Aguas negras",
-  lpg:         "GLP / Gas",
-  other:       "Otro",
-};
+import { useI18n } from "../lib/i18n";
 
 const TANK_ICONS: Record<TankType, string> = {
   diesel:      "⛽",
@@ -31,6 +23,17 @@ export function BoatTabTanks({ tanks, canEdit, onEdit }: {
   canEdit?: boolean;
   onEdit?: () => void;
 }) {
+  const { t } = useI18n();
+
+  const TANK_LABELS: Record<TankType, string> = {
+    diesel:      t("tankTypeDiesel"),
+    fresh_water: t("tankTypeFreshWater"),
+    grey_water:  t("tankTypeGreyWater"),
+    black_water: t("tankTypeBlackWater"),
+    lpg:         t("tankTypeLPG"),
+    other:       t("tankTypeOther"),
+  };
+
   const totalDiesel = tanks.filter((t) => t.type === "diesel").reduce((s, t) => s + t.capacity, 0);
   const totalWater  = tanks.filter((t) => t.type === "fresh_water").reduce((s, t) => s + t.capacity, 0);
 
@@ -38,14 +41,19 @@ export function BoatTabTanks({ tanks, canEdit, onEdit }: {
     <div className="boat-detail-sections">
       <section className="boat-detail-section">
         <div className="boat-detail-section-head">
-          <h4>Capacidades nominales</h4>
+          <h4>{t("sectionTankCapacities")}</h4>
           {canEdit && onEdit && (
-            <button className="btn-icon" type="button" title="Editar tanques" onClick={onEdit}>✏</button>
+            <button className="btn-icon" type="button" title={t("editTanks")} onClick={onEdit}>✏</button>
           )}
         </div>
 
         {tanks.length === 0 && (
-          <p className="data-table-cell-muted">Sin tanques registrados.</p>
+          <div className="empty-inline">
+            <p className="data-table-cell-muted">{t("noTanks")}</p>
+            {canEdit && onEdit && (
+              <button className="btn-ghost" type="button" onClick={onEdit}>{t("addTank")}</button>
+            )}
+          </div>
         )}
 
         <div className="tank-list">
@@ -65,7 +73,7 @@ export function BoatTabTanks({ tanks, canEdit, onEdit }: {
               </div>
               <TankBar pct={100} />
               {tank.material && (
-                <p className="tank-meta">Material: {tank.material}</p>
+                <p className="tank-meta">{t("tankMaterial")}: {tank.material}</p>
               )}
               {tank.notes && (
                 <p className="tank-meta">{tank.notes}</p>
@@ -77,16 +85,16 @@ export function BoatTabTanks({ tanks, canEdit, onEdit }: {
 
       {(totalDiesel > 0 || totalWater > 0) && (
         <section className="boat-detail-section">
-          <h4>Resumen</h4>
+          <h4>{t("sectionTankSummary")}</h4>
           {totalDiesel > 0 && (
             <div className="boat-detail-row">
-              <span className="boat-detail-label">Total gasoil</span>
+              <span className="boat-detail-label">{t("totalDiesel")}</span>
               <span className="boat-detail-value">{totalDiesel.toLocaleString("es")} L</span>
             </div>
           )}
           {totalWater > 0 && (
             <div className="boat-detail-row">
-              <span className="boat-detail-label">Total agua dulce</span>
+              <span className="boat-detail-label">{t("totalFreshWater")}</span>
               <span className="boat-detail-value">{totalWater.toLocaleString("es")} L</span>
             </div>
           )}

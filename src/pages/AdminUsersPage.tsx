@@ -10,13 +10,7 @@ import {
 import { isSupabaseConfigured } from "../lib/supabase";
 import type { AdminBoatOption, AdminUser, AppRole } from "../lib/types";
 import { useAuth } from "../providers/AuthProvider";
-
-const roleOptions = [
-  { value: "superuser", label: "Administrador total" },
-  { value: "owner_admin", label: "Gestor" },
-  { value: "limited_user", label: "Usuario operativo" },
-  { value: "read_only", label: "Solo lectura" }
-] as const;
+import { useI18n } from "../lib/i18n";
 
 const defaultRole: AppRole = "owner_admin";
 
@@ -120,6 +114,7 @@ function BoatAccessPicker({
 
 export function AdminUsersPage() {
   const { session } = useAuth();
+  const { t } = useI18n();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [boats, setBoats] = useState<AdminBoatOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,10 +122,17 @@ export function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const roleOptions = [
+    { value: "superuser" as AppRole,     label: t("adminRoleSuperuser") },
+    { value: "owner_admin" as AppRole,   label: t("adminRoleOwnerAdmin") },
+    { value: "limited_user" as AppRole,  label: t("adminRoleLimitedUser") },
+    { value: "read_only" as AppRole,     label: t("adminRoleReadOnly") },
+  ];
+
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteLanguage, setInviteLanguage] = useState<"es" | "en">("es");
-  const [inviteRole, setInviteRole] = useState<(typeof roleOptions)[number]["value"]>("owner_admin");
+  const [inviteRole, setInviteRole] = useState<AppRole>(defaultRole);
   const [inviteBoatIds, setInviteBoatIds] = useState<string[]>([]);
 
   const [managedUserId, setManagedUserId] = useState("");

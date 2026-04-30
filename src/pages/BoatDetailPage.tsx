@@ -6,19 +6,15 @@ import { BoatTabGeneral } from "../components/BoatTabGeneral";
 import { BoatTabDimensions } from "../components/BoatTabDimensions";
 import { BoatTabTanks } from "../components/BoatTabTanks";
 import { BoatTabDocuments } from "../components/BoatTabDocuments";
+import { BoatTabPolars } from "../components/BoatTabPolars";
+import { EditBoatGeneralModal } from "../components/EditBoatGeneralModal";
 import { EditDimensionsModal } from "../components/EditDimensionsModal";
 import { EditTanksModal } from "../components/EditTanksModal";
 import { EditIdentifiersModal } from "../components/EditIdentifiersModal";
 import { flagEmoji } from "../lib/flags";
+import { useI18n } from "../lib/i18n";
 
-type Tab = "general" | "dimensions" | "tanks" | "documents";
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: "general",    label: "General" },
-  { key: "dimensions", label: "Dimensiones" },
-  { key: "tanks",      label: "Tanques" },
-  { key: "documents",  label: "Documentos" },
-];
+type Tab = "general" | "dimensions" | "polars" | "tanks" | "documents";
 
 export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUpdated }: {
   boat: Boat;
@@ -27,12 +23,13 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
   onBoatUpdated?: (boat: Boat) => void;
 }) {
   const { canEditBoat } = useAuth();
+  const { t } = useI18n();
   const [boat, setBoat] = useState(initialBoat);
   const canEdit = canEditBoat(boat.id);
   const [tab, setTab] = useState<Tab>("general");
   const [docs, setDocs] = useState<BoatDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
-  const [editModal, setEditModal] = useState<"dimensions" | "tanks" | "identifiers" | null>(null);
+  const [editModal, setEditModal] = useState<"general" | "dimensions" | "polars" | "tanks" | "identifiers" | null>(null);
 
   useEffect(() => {
     setDocsLoading(true);
@@ -61,6 +58,33 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
     setBoat((b) => { const updated = { ...b, identifiers }; onBoatUpdated?.(updated); return updated; });
   }
 
+  async function saveGeneral(data: Pick<Boat,
+    | "name"
+    | "identifier"
+    | "registrationNumber"
+    | "brandModel"
+    | "buildYear"
+    | "shipyard"
+    | "propulsion"
+    | "boatType"
+    | "engineNotes"
+    | "notes"
+    | "flag"
+  >) {
+    const updated = { ...boat, ...data };
+    await db.updateBoat(boat.id, updated);
+    setBoat(updated);
+    onBoatUpdated?.(updated);
+  }
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "general",    label: t("tabGeneral") },
+    { key: "dimensions", label: t("tabDimensions") },
+    { key: "polars",     label: t("tabPolars") },
+    { key: "tanks",      label: t("tabTanks") },
+    { key: "documents",  label: t("tabDocuments") },
+  ];
+
   const flag = boat.flag ? `${flagEmoji(boat.flag)} ` : "";
 
   return (
@@ -68,7 +92,7 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
       {/* ── Header ── */}
       <div className="boat-detail-header">
         <button className="btn-ghost" type="button" onClick={onBack} style={{ fontSize: "0.85rem" }}>
-          ← Volver
+          ←
         </button>
         <div>
           <h2 style={{ margin: 0 }}>{flag}{boat.name}</h2>
@@ -102,7 +126,7 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
           <BoatTabGeneral
             boat={boat}
             canEdit={canEdit}
-            onEditBoat={onEditBoat ? () => onEditBoat(boat) : undefined}
+            onEditBoat={() => setEditModal("general")}
             onEditIdentifiers={() => setEditModal("identifiers")}
           />
         )}
@@ -123,6 +147,14 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
           />
         )}
 
+        {tab === "polars" && (
+          <BoatTabPolars
+            dims={boat.dimensions ?? {}}
+            canEdit={canEdit}
+            onEdit={() => setEditModal("polars")}
+          />
+        )}
+
         {tab === "documents" && (
           docsLoading
             ? <p className="data-table-cell-muted">Cargando…</p>
@@ -136,9 +168,17 @@ export function BoatDetailPage({ boat: initialBoat, onBack, onEditBoat, onBoatUp
       </div>
 
       {/* ── Edit modals ── */}
-      {editModal === "dimensions" && (
+      {editModal === "general" && (
+        <EditBoatGeneralModal
+          boat={boat}
+          onSave={async (data) => { await saveGeneral(data); setEditModal(null); }}
+          onClose={() => setEditModal(null)}
+        />
+      )}
+      {(editModal === "dimensions" || editModal === "polars") && (
         <EditDimensionsModal
           dims={boat.dimensions ?? {}}
+          initialTab={editModal === "polars" ? "polar" : "hull"}
           onSave={async (d) => { await saveDimensions(d); setEditModal(null); }}
           onClose={() => setEditModal(null)}
         />

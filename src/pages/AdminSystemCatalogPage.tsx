@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from "../lib/supabase";
 import type { SystemCatalogEntry } from "../lib/types";
 import { useAuth } from "../providers/AuthProvider";
 import { useAppData } from "../providers/AppDataProvider";
+import { useI18n } from "../lib/i18n";
 
 type CatalogFormValue = {
   code: string;
@@ -38,17 +39,18 @@ function CatalogForm({
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  const { t } = useI18n();
   return (
     <form className="form-stack" onSubmit={(event) => { event.preventDefault(); onSave(form); }}>
-      <FormSection title="Sistema del catálogo">
+      <FormSection title={t("systemCatalogSystem")}>
         <FormGrid>
-          <InputField label="Código" required value={form.code} onChange={(event) => set("code", event.target.value)} />
-          <InputField label="Nombre ES" required value={form.name_es} onChange={(event) => set("name_es", event.target.value)} />
-          <InputField label="Nombre EN" required value={form.name_en} onChange={(event) => set("name_en", event.target.value)} />
+          <InputField label={t("fieldCode")} required value={form.code} onChange={(event) => set("code", event.target.value)} />
+          <InputField label={t("fieldNameES")} required value={form.name_es} onChange={(event) => set("name_es", event.target.value)} />
+          <InputField label={t("fieldNameEN")} required value={form.name_en} onChange={(event) => set("name_en", event.target.value)} />
         </FormGrid>
       </FormSection>
       {error && <p className="form-error">{error}</p>}
-      <FormActions onCancel={onCancel} loading={loading} danger={Boolean(onDelete)} onDanger={onDelete} dangerLabel="Eliminar" />
+      <FormActions onCancel={onCancel} loading={loading} danger={Boolean(onDelete)} onDanger={onDelete} />
     </form>
   );
 }

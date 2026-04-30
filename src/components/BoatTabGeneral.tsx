@@ -1,14 +1,6 @@
 import type { Boat } from "../lib/types";
 import { flagEmoji } from "../lib/flags";
-
-const BOAT_TYPE_LABELS: Record<string, string> = {
-  Sailboat: "Velero",
-  "Motor yacht": "Motor yacht",
-  Catamaran: "Catamarán",
-  RIB: "RIB",
-  Motorboat: "Lancha",
-  Other: "Otro",
-};
+import { useI18n } from "../lib/i18n";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value && value !== 0) return null;
@@ -26,52 +18,98 @@ export function BoatTabGeneral({ boat, canEdit, onEditBoat, onEditIdentifiers }:
   onEditBoat?: () => void;
   onEditIdentifiers?: () => void;
 }) {
+  const { t } = useI18n();
   const ids = boat.identifiers;
+  const hasIdentifiers = Boolean(ids && Object.values(ids).some((value) => value));
+
+  const BOAT_TYPE_LABELS: Record<string, string> = {
+    Sailboat: t("boatTypeSailboat"),
+    "Motor yacht": t("boatTypeMotorYacht"),
+    Catamaran: t("boatTypeCatamaran"),
+    RIB: t("boatTypeRIB"),
+    Motorboat: t("boatTypeMotorboat"),
+    Other: t("boatTypeOther"),
+  };
+
   return (
     <div className="boat-detail-sections">
       <section className="boat-detail-section">
         <div className="boat-detail-section-head">
-          <h4>Identificación</h4>
+          <h4>{t("sectionIdentification")}</h4>
           {canEdit && onEditBoat && (
-            <button className="btn-icon" type="button" title="Editar datos del barco" onClick={onEditBoat}>✏</button>
+            <button className="btn-icon" type="button" title={t("editBoatData")} onClick={onEditBoat}>✏</button>
           )}
         </div>
-        <Row label="Nombre" value={boat.name} />
-        <Row label="Marca / Modelo" value={boat.brandModel} />
-        <Row label="Tipo" value={boat.boatType ? (BOAT_TYPE_LABELS[boat.boatType] ?? boat.boatType) : null} />
-        <Row label="Año" value={boat.buildYear} />
-        <Row label="Astillero" value={boat.shipyard} />
-        <Row label="Matrícula" value={boat.registrationNumber} />
-        <Row label="Bandera" value={boat.flag ? `${flagEmoji(boat.flag)} ${boat.flag}` : null} />
-        <Row label="Identificador" value={boat.identifier} />
+        <Row label={t("fieldName")} value={boat.name} />
+        <Row label={t("fieldBrandModel")} value={boat.brandModel} />
+        <Row label={t("fieldBoatType")} value={boat.boatType ? (BOAT_TYPE_LABELS[boat.boatType] ?? boat.boatType) : null} />
+        <Row label={t("fieldYear")} value={boat.buildYear} />
+        <Row label={t("fieldShipyard")} value={boat.shipyard} />
+        <Row label={t("fieldRegistration")} value={boat.registrationNumber} />
+        <Row label={t("fieldFlag")} value={boat.flag ? `${flagEmoji(boat.flag)} ${boat.flag}` : null} />
+        <Row label={t("fieldIdentifier")} value={boat.identifier} />
       </section>
 
       <section className="boat-detail-section">
         <div className="boat-detail-section-head">
-          <h4>Identificadores internacionales</h4>
+          <h4>{t("sectionIntlIdentifiers")}</h4>
           {canEdit && onEditIdentifiers && (
-            <button className="btn-icon" type="button" title="Editar" onClick={onEditIdentifiers}>✏</button>
+            <button className="btn-icon" type="button" title={t("editIntlIdentifiers")} onClick={onEditIdentifiers}>✏</button>
           )}
         </div>
-        <Row label="MMSI" value={ids?.mmsi} />
-        <Row label="Indicativo radio (call sign)" value={ids?.callSign} />
-        <Row label="Nº IMO" value={ids?.imoNumber} />
-        <Row label="Nominativo internacional" value={ids?.intNominativo} />
-        <Row label="Código WIN (HIN)" value={ids?.winCode} />
-        <Row label="Ref. club / asociación" value={ids?.atcnRef} />
-        {!ids && !canEdit && <p className="data-table-cell-muted" style={{ margin: 0, fontSize: "0.85rem" }}>Sin datos.</p>}
+        <Row label={t("fieldMMSI")} value={ids?.mmsi} />
+        <Row label={t("fieldCallSign")} value={ids?.callSign} />
+        <Row label={t("fieldIMO")} value={ids?.imoNumber} />
+        <Row label={t("fieldIntNominativo")} value={ids?.intNominativo} />
+        <Row label={t("fieldWinCode")} value={ids?.winCode} />
+        <Row label={t("fieldAtcnRef")} value={ids?.atcnRef} />
+        {!hasIdentifiers && (
+          <div className="empty-inline">
+            <p className="data-table-cell-muted">{t("noData")}</p>
+            {canEdit && onEditIdentifiers && (
+              <button className="btn-ghost" type="button" onClick={onEditIdentifiers}>{t("addIdentifiers")}</button>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="boat-detail-section">
-        <h4>Motor y propulsión</h4>
-        <Row label="Propulsión" value={boat.propulsion} />
-        <Row label="Notas motor" value={boat.engineNotes} />
+        <div className="boat-detail-section-head">
+          <h4>{t("sectionEngineAndPropulsion")}</h4>
+          {canEdit && onEditBoat && (
+            <button className="btn-icon" type="button" title={t("editEngineData")} onClick={onEditBoat}>✏</button>
+          )}
+        </div>
+        <Row label={t("fieldPropulsion")} value={boat.propulsion} />
+        <Row label={t("fieldEngineNotes")} value={boat.engineNotes} />
+        {!boat.propulsion && !boat.engineNotes && (
+          <div className="empty-inline">
+            <p className="data-table-cell-muted">{t("noData")}</p>
+            {canEdit && onEditBoat && (
+              <button className="btn-ghost" type="button" onClick={onEditBoat}>{t("addEngine")}</button>
+            )}
+          </div>
+        )}
       </section>
 
-      {boat.notes && (
+      {(boat.notes || canEdit) && (
         <section className="boat-detail-section">
-          <h4>Notas generales</h4>
-          <p style={{ margin: 0, whiteSpace: "pre-wrap", fontSize: "0.9rem" }}>{boat.notes}</p>
+          <div className="boat-detail-section-head">
+            <h4>{t("sectionGeneralNotes")}</h4>
+            {canEdit && onEditBoat && (
+              <button className="btn-icon" type="button" title={t("editGeneralNotes")} onClick={onEditBoat}>✏</button>
+            )}
+          </div>
+          {boat.notes ? (
+            <p style={{ margin: 0, whiteSpace: "pre-wrap", fontSize: "0.9rem" }}>{boat.notes}</p>
+          ) : (
+            <div className="empty-inline">
+              <p className="data-table-cell-muted">{t("noNotes")}</p>
+              {onEditBoat && (
+                <button className="btn-ghost" type="button" onClick={onEditBoat}>{t("addNotes")}</button>
+              )}
+            </div>
+          )}
         </section>
       )}
     </div>

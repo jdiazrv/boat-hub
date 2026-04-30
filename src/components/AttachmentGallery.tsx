@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { TaskAttachment } from "../lib/types";
 import * as db from "../lib/db";
+import { useI18n } from "../lib/i18n";
 
-function Lightbox({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+function Lightbox({ url, name, onClose, openLabel }: { url: string; name: string; onClose: () => void; openLabel: string }) {
   return (
     <div
       style={{
@@ -21,7 +22,7 @@ function Lightbox({ url, name, onClose }: { url: string; name: string; onClose: 
               style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.82rem", textDecoration: "underline" }}
               onClick={(e) => e.stopPropagation()}
             >
-              Abrir original
+              {openLabel}
             </a>
             <button
               onClick={onClose}
@@ -49,6 +50,7 @@ export function AttachmentGallery({
   onDeleted?: (id: string) => void;
   readOnly?: boolean;
 }) {
+  const { t } = useI18n();
   const [lightbox, setLightbox] = useState<TaskAttachment | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -58,7 +60,7 @@ export function AttachmentGallery({
   const files = attachments.filter((a) => a.documentCategory === "file");
 
   async function handleDelete(att: TaskAttachment) {
-    if (!confirm(`¿Eliminar "${att.fileName}"?`)) return;
+    if (!confirm(`${t("confirmDeleteFile")} "${att.fileName}"?`)) return;
     setDeleting(att.id);
     try {
       await db.deleteAttachment(att.id, att.storagePath);
@@ -71,13 +73,13 @@ export function AttachmentGallery({
   return (
     <div style={{ display: "grid", gap: "0.6rem" }}>
       {lightbox && lightbox.signedUrl && (
-        <Lightbox url={lightbox.signedUrl} name={lightbox.fileName} onClose={() => setLightbox(null)} />
+        <Lightbox url={lightbox.signedUrl} name={lightbox.fileName} onClose={() => setLightbox(null)} openLabel={t("openOriginal")} />
       )}
 
       {photos.length > 0 && (
         <div>
           <div style={{ fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-soft)", marginBottom: "0.35rem" }}>
-            Fotografías
+            {t("galleryPhotos")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
             {photos.map((att) => (
@@ -100,7 +102,7 @@ export function AttachmentGallery({
                   </button>
                 ) : (
                   <div style={{ width: "72px", height: "72px", background: "var(--input-bg)", borderRadius: "0.5rem", border: "1px solid var(--border)", display: "grid", placeItems: "center", color: "var(--text-soft)", fontSize: "0.7rem" }}>
-                    Sin URL
+                    —
                   </div>
                 )}
                 {!readOnly && (
@@ -115,7 +117,7 @@ export function AttachmentGallery({
                       cursor: "pointer", fontSize: "0.65rem", display: "grid", placeItems: "center",
                       lineHeight: 1, padding: 0,
                     }}
-                    title="Eliminar foto"
+                    title={t("delete")}
                   >
                     ✕
                   </button>
@@ -129,7 +131,7 @@ export function AttachmentGallery({
       {files.length > 0 && (
         <div>
           <div style={{ fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-soft)", marginBottom: "0.35rem" }}>
-            Archivos
+            {t("galleryFiles")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
             {files.map((att) => (
@@ -153,7 +155,7 @@ export function AttachmentGallery({
                     disabled={deleting === att.id}
                     className="btn-icon"
                     style={{ width: "18px", height: "18px", fontSize: "0.65rem" }}
-                    title="Eliminar archivo"
+                    title={t("delete")}
                   >
                     ✕
                   </button>
