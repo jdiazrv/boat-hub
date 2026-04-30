@@ -1,9 +1,6 @@
 import type { BoatDimensions, SailInventoryItem } from "../lib/types";
 import { OrcDiagram } from "./OrcDiagram";
-import { PolarChart } from "./PolarChart";
 import { useI18n } from "../lib/i18n";
-
-const WIND_SPEEDS = [6, 8, 10, 12, 14, 16, 20];
 
 function Row({ label, value, unit }: { label: string; value: React.ReactNode; unit?: string }) {
   if (value === null || value === undefined || value === "") return null;
@@ -62,8 +59,6 @@ export function BoatTabDimensions({ dims, canEdit, onEdit }: {
   const { t } = useI18n();
   const safeDims = dims ?? {};
   const sails = safeDims.sails ?? [];
-  const hasPolar = safeDims.polarRows && safeDims.polarRows.length > 0;
-  const winds = safeDims.polarWindSpeeds ?? WIND_SPEEDS;
   const hasAnyDimension = Object.values(safeDims).some((value) => {
     if (Array.isArray(value)) return value.length > 0;
     return value !== null && value !== undefined && value !== "";
@@ -178,47 +173,6 @@ export function BoatTabDimensions({ dims, canEdit, onEdit }: {
         )}
       </section>
 
-      {/* ── VPP Polar table ───────────────────────────────────────────── */}
-      <section className="boat-detail-section">
-        <h4>{t("sectionPolarTable")}</h4>
-        {hasPolar ? (
-          <>
-            <PolarChart dims={safeDims} />
-            <div style={{ overflowX: "auto" }}>
-              <table className="polar-table">
-                <thead>
-                  <tr>
-                    <th>TWA</th>
-                    {winds.map((w) => <th key={w}>{w} kt</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {safeDims.polarBeatAngles && (
-                    <tr className="polar-row-beat">
-                      <td>↑ {safeDims.polarBeatAngles.map((a) => `${a}°`).join(" / ")}</td>
-                      {(safeDims.polarBeatVmg ?? []).map((v, i) => <td key={i}>{v}</td>)}
-                    </tr>
-                  )}
-                  {safeDims.polarRows!.map((row) => (
-                    <tr key={row.twa}>
-                      <td><strong>{row.twa}°</strong></td>
-                      {row.speeds.map((s, i) => <td key={i}>{s}</td>)}
-                    </tr>
-                  ))}
-                  {safeDims.polarRunVmg && (
-                    <tr className="polar-row-run">
-                      <td>↓ {t("polarRunVmg")}</td>
-                      {safeDims.polarRunVmg.map((v, i) => <td key={i}>{v}</td>)}
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </>
-        ) : (
-          <p className="data-table-cell-muted">{t("noPolarData")}</p>
-        )}
-      </section>
     </div>
   );
 }
