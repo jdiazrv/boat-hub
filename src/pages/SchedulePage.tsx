@@ -219,7 +219,7 @@ function TemplatePicker({
           className="form-input form-select" value={systemFilter}
           onChange={(e) => setSystemFilter(e.target.value)}
         >
-          <option value="">Todos los sistemas</option>
+          <option value="">{t("allSystems")}</option>
           {systems.map((s) => (
             <option key={s.code} value={s.code}>
               {locale === "es" ? s.nameEs : s.nameEn}
@@ -245,13 +245,13 @@ function TemplatePicker({
         })}
         {filtered.length === 0 && (
           <p style={{ color: "var(--text-soft)", fontSize: "0.88rem", padding: "1rem 0" }}>
-            No hay tareas disponibles con estos filtros.
+            {t("noActionsMatchFilter")}
           </p>
         )}
       </div>
 
       <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end" }}>
-        <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
+        <button type="button" className="btn-ghost" onClick={onCancel}>{t("cancel")}</button>
       </div>
     </div>
   );
@@ -478,7 +478,7 @@ export function SchedulePage() {
           className="form-input form-select" value={systemFilter}
           onChange={(e) => setSystemFilter(e.target.value)}
         >
-          <option value="">Todos los sistemas</option>
+          <option value="">{t("allSystems")}</option>
           {systems.map((s) => (
             <option key={s.code} value={s.code}>
               {locale === "es" ? s.nameEs : s.nameEn}

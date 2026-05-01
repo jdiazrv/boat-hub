@@ -39,9 +39,9 @@ function ShipyardForm({
 
   return (
     <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-      <FormSection title="Identificación">
+      <FormSection title={t("sectionIdentification")}>
         <LocationSearchWithMap
-          label="Buscar en mapa"
+          label={t("labelSearchOnMap")}
           latitude={form.latitude}
           longitude={form.longitude}
           onPick={(place) => setForm((f) => ({ ...f, ...place }))}
@@ -51,22 +51,22 @@ function ShipyardForm({
           <InputField label={t("country")} value={form.country ?? ""} onChange={(e) => set("country", e.target.value || null)} />
           <InputField label={t("region")} value={form.region ?? ""} onChange={(e) => set("region", e.target.value || null)} />
           <InputField label={t("address")} value={form.address ?? ""} onChange={(e) => set("address", e.target.value || null)} />
-          <InputField label="Latitud" type="number" value={form.latitude ?? ""} onChange={(e) => set("latitude", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Longitud" type="number" value={form.longitude ?? ""} onChange={(e) => set("longitude", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelLatitude")} type="number" value={form.latitude ?? ""} onChange={(e) => set("latitude", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelLongitude")} type="number" value={form.longitude ?? ""} onChange={(e) => set("longitude", e.target.value ? Number(e.target.value) : null)} />
           <InputField label={t("website")} value={form.website ?? ""} onChange={(e) => set("website", e.target.value || null)} />
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Contacto">
+      <FormSection title={t("sectionContact")}>
         <FormGrid>
           <InputField label={t("phone")} value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value || null)} />
           <InputField label="Email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value || null)} />
-          <InputField label="Contacto" value={form.contactPerson ?? ""} onChange={(e) => set("contactPerson", e.target.value || null)} />
-          <InputField label="Canal VHF" value={form.vhfChannel ?? ""} onChange={(e) => set("vhfChannel", e.target.value || null)} />
+          <InputField label={t("labelContactPerson")} value={form.contactPerson ?? ""} onChange={(e) => set("contactPerson", e.target.value || null)} />
+          <InputField label={t("labelVhfChannel")} value={form.vhfChannel ?? ""} onChange={(e) => set("vhfChannel", e.target.value || null)} />
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Capacidad técnica">
+      <FormSection title={t("sectionTechnicalCapacity")}>
         <FormGrid>
           <InputField label={t("liftType")} value={form.liftType ?? ""} onChange={(e) => set("liftType", e.target.value || null)} />
           <InputField label={t("liftCapacity")} type="number" value={form.liftCapacityTons ?? ""} onChange={(e) => set("liftCapacityTons", e.target.value ? Number(e.target.value) : null)} />
@@ -76,7 +76,7 @@ function ShipyardForm({
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Servicios">
+      <FormSection title={t("sectionServices")}>
         <div className="form-checkbox-grid">
           <CheckboxField label={t("water")} checked={form.hasWater} onChange={(e) => set("hasWater", e.target.checked)} />
           <CheckboxField label={t("electricity")} checked={form.hasElectricity} onChange={(e) => set("hasElectricity", e.target.checked)} />
@@ -84,26 +84,26 @@ function ShipyardForm({
           <CheckboxField label={t("showers")} checked={form.hasShowers} onChange={(e) => set("hasShowers", e.target.checked)} />
           <CheckboxField label={t("security")} checked={form.hasSecurity} onChange={(e) => set("hasSecurity", e.target.checked)} />
         </div>
-        <TextareaField label="Talleres / servicios disponibles" value={form.services ?? ""} onChange={(e) => set("services", e.target.value || null)} />
+        <TextareaField label={t("labelShipyardServices")} value={form.services ?? ""} onChange={(e) => set("services", e.target.value || null)} />
       </FormSection>
 
-      <FormSection title="Tarifas">
+      <FormSection title={t("sectionRates")}>
         <FormGrid>
-          <InputField label="Izada / botadura" type="number" value={form.liftInOutPrice ?? ""} onChange={(e) => set("liftInOutPrice", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Lavado alta presión" type="number" value={form.pressureWashPrice ?? ""} onChange={(e) => set("pressureWashPrice", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Estancia diaria" type="number" value={form.dailyStoragePrice ?? ""} onChange={(e) => set("dailyStoragePrice", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Estancia mensual" type="number" value={form.monthlyStoragePrice ?? ""} onChange={(e) => set("monthlyStoragePrice", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Estancia anual" type="number" value={form.annualStoragePrice ?? ""} onChange={(e) => set("annualStoragePrice", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Moneda" value={form.currency ?? ""} onChange={(e) => set("currency", e.target.value || null)} />
-          <InputField label="IVA (%)" type="number" value={form.vatPercent ?? ""} onChange={(e) => set("vatPercent", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelLiftInOut")} type="number" value={form.liftInOutPrice ?? ""} onChange={(e) => set("liftInOutPrice", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelPressureWash")} type="number" value={form.pressureWashPrice ?? ""} onChange={(e) => set("pressureWashPrice", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelDailyStorage")} type="number" value={form.dailyStoragePrice ?? ""} onChange={(e) => set("dailyStoragePrice", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelMonthlyStorage")} type="number" value={form.monthlyStoragePrice ?? ""} onChange={(e) => set("monthlyStoragePrice", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelAnnualStorage")} type="number" value={form.annualStoragePrice ?? ""} onChange={(e) => set("annualStoragePrice", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelCurrency")} value={form.currency ?? ""} onChange={(e) => set("currency", e.target.value || null)} />
+          <InputField label={t("labelVat")} type="number" value={form.vatPercent ?? ""} onChange={(e) => set("vatPercent", e.target.value ? Number(e.target.value) : null)} />
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Otros">
+      <FormSection title={t("sectionOther")}>
         <FormGrid>
           <InputField label={t("rating")} type="number" value={form.rating ?? ""} onChange={(e) => set("rating", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Fecha de información" type="date" value={form.infoDate ?? ""} onChange={(e) => set("infoDate", e.target.value || null)} />
-          <InputField label="Fuente" value={form.source ?? ""} onChange={(e) => set("source", e.target.value || null)} />
+          <InputField label={t("labelInfoDate")} type="date" value={form.infoDate ?? ""} onChange={(e) => set("infoDate", e.target.value || null)} />
+          <InputField label={t("labelSource")} value={form.source ?? ""} onChange={(e) => set("source", e.target.value || null)} />
         </FormGrid>
         <TextareaField label={t("notes")} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
@@ -181,7 +181,7 @@ export function ShipyardsPage() {
       )}
 
       <div className="filter-bar">
-        <input className="form-input" placeholder="Buscar por nombre o país…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: "240px" }} />
+        <input className="form-input" placeholder={t("placeholderSearchByNameOrCountry")} value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: "240px" }} />
       </div>
 
       {error && !modal && (

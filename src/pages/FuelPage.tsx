@@ -36,11 +36,11 @@ function FuelLogForm({
       <FormSection>
         <div className="form-boat-badge">{boatName}</div>
         <FormGrid>
-          <InputField label="Fecha" type="date" required value={form.fuelledAt} onChange={(e) => set("fuelledAt", e.target.value)} />
+          <InputField label={t("colDate")} type="date" required value={form.fuelledAt} onChange={(e) => set("fuelledAt", e.target.value)} />
           <SelectField label={t("fuelType")} value={form.fuelType} onChange={(e) => set("fuelType", e.target.value)}>
             {FUEL_TYPES.map((f) => <option key={f} value={f}>{f}</option>)}
           </SelectField>
-          <InputField label="Cantidad" type="number" required value={form.quantity} onChange={(e) => set("quantity", Number(e.target.value))} />
+          <InputField label={t("colQuantity")} type="number" required value={form.quantity} onChange={(e) => set("quantity", Number(e.target.value))} />
           <SelectField label={t("unit")} value={form.unit} onChange={(e) => set("unit", e.target.value)}>
             <option value="L">Litros</option>
             <option value="Gal">Galones</option>
@@ -169,7 +169,7 @@ export function FuelPage() {
         <div className="data-table">
           <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 1fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((l) => l.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>Fecha</span><span>Tipo</span><span>Cantidad</span><span>€/u</span><span>Lugar</span><span>Horas</span><span></span>
+            <span>{t("colDate")}</span><span>{t("colType")}</span><span>{t("colQuantity")}</span><span>{t("colPricePerUnit")}</span><span>{t("colPlace")}</span><span>{t("colHours")}</span><span></span>
           </div>
           {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay repostajes registrados.</p></div>}
           {filtered.map((l) => (

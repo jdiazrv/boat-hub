@@ -319,7 +319,7 @@ export function BoatCatalogPage() {
 
       <div className="filter-bar">
         <input
-          className="form-input" type="search" placeholder="Buscar tarea…"
+          className="form-input" type="search" placeholder={t("searchTask")}
           value={search} onChange={(e) => setSearch(e.target.value)}
         />
         <select className="form-input form-select" value={systemFilter} onChange={(e) => setSystemFilter(e.target.value)}>

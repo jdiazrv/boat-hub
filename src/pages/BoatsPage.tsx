@@ -92,12 +92,12 @@ function BoatForm({
           </SelectField>
           <SelectField label="Tipo de barco" value={form.boatType ?? ""} onChange={(e) => set("boatType", e.target.value)}>
             <option value="">-- Selecciona --</option>
-            <option value="Sailboat">Velero</option>
-            <option value="Motor yacht">Motor yacht</option>
-            <option value="Catamaran">Catamarán</option>
-            <option value="RIB">RIB</option>
-            <option value="Motorboat">Lancha</option>
-            <option value="Other">Otro</option>
+            <option value="Sailboat">{t("boatTypeSailboat")}</option>
+            <option value="Motor yacht">{t("boatTypeMotorYacht")}</option>
+            <option value="Catamaran">{t("boatTypeCatamaran")}</option>
+            <option value="RIB">{t("boatTypeRIB")}</option>
+            <option value="Motorboat">{t("boatTypeMotorboat")}</option>
+            <option value="Other">{t("boatTypeOther")}</option>
           </SelectField>
           <SelectField label="Bandera" value={form.flag ?? ""} onChange={(e) => set("flag", e.target.value || null)}>
             <option value="">-- Sin bandera --</option>
@@ -315,13 +315,13 @@ export function BoatsPage() {
                 )}
                 {isSupabaseConfigured && "buildYear" in boat && (boat as Boat).buildYear && (
                   <div>
-                    <span>Año</span>
+                    <span>{t("colYear")}</span>
                     <strong>{(boat as Boat).buildYear}</strong>
                   </div>
                 )}
                 {isSupabaseConfigured && "propulsion" in boat && (boat as Boat).propulsion && (
                   <div>
-                    <span>Propulsión</span>
+                    <span>{t("colPropulsion")}</span>
                     <strong>{(boat as Boat).propulsion}</strong>
                   </div>
                 )}

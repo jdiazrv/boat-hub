@@ -127,18 +127,18 @@ function TaskForm({
   if (step === "catalog") {
     return (
       <div className="form-stack">
-        <FormSection title="Elegir acción del catálogo">
+        <FormSection title={t("sectionChooseFromCatalog")}>
           <div className="form-boat-badge">{boatName}</div>
           <HourCountersSummary counters={hourCounters} />
           <div className="filter-bar" style={{ marginBottom: "0.75rem" }}>
             <InputField
-              label="Buscar acción"
+              label={t("labelSearchAction")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nombre, descripción o sistema"
+              placeholder={t("placeholderNameDescSystem")}
             />
             <SelectField label={t("system")} value={catalogSystemId} onChange={(e) => setCatalogSystemId(e.target.value)}>
-              <option value="">Todos los sistemas</option>
+              <option value="">{t("allSystems")}</option>
               {catalogSystems.map((s) => (
                 <option key={s.id} value={s.id}>{locale === "es" ? s.nameEs : s.nameEn}</option>
               ))}
@@ -161,12 +161,12 @@ function TaskForm({
               );
             })}
             {visibleTemplates.length === 0 && (
-              <p className="data-table-cell-muted">No hay acciones en el catálogo con esos filtros.</p>
+              <p className="data-table-cell-muted">{t("noActionsMatchFilter")}</p>
             )}
           </div>
         </FormSection>
 
-        <FormSection title="No está en el catálogo">
+        <FormSection title={t("sectionNotInCatalog")}>
           <FormGrid>
             <InputField label={t("title")} value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} />
             <SelectField label={t("kind")} value={manualKind} onChange={(e) => setManualKind(e.target.value as MaintenanceKind)}>
@@ -213,7 +213,7 @@ function TaskForm({
         <TextareaField label={t("description")} value={form.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
       </FormSection>
 
-      <FormSection title="Clasificación">
+      <FormSection title={t("sectionClassification")}>
         <FormGrid>
           <SelectField label={t("kind")} value={form.kind} onChange={(e) => set("kind", e.target.value as typeof form.kind)}>
             {KINDS.map((k) => <option key={k} value={k}>{t(`kind_${k}`)}</option>)}
@@ -235,7 +235,7 @@ function TaskForm({
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Planificación">
+      <FormSection title={t("sectionPlanning")}>
         <FormGrid>
           <SelectField label="Varada" value={form.haulOutId ?? ""}
             onChange={(e) => {
@@ -257,7 +257,7 @@ function TaskForm({
           )}
           <InputField label={t("responsible")} value={form.responsible ?? ""}
             onChange={(e) => set("responsible", e.target.value || null)} />
-          <InputField label="Realizado por" value={form.performedBy ?? ""}
+          <InputField label={t("labelPerformedBy")} value={form.performedBy ?? ""}
             onChange={(e) => set("performedBy", e.target.value || null)} />
           <InputField label={t("engineHours")} type="number" value={form.engineHours ?? ""}
             onChange={(e) => set("engineHours", e.target.value ? Number(e.target.value) : null)} />
@@ -271,15 +271,15 @@ function TaskForm({
           onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
 
-      <FormSection title="Adjuntos">
+      <FormSection title={t("sectionAttachments")}>
         <AttachmentGallery
           attachments={attachments}
           onDeleted={(id) => setAttachments((prev) => prev.filter((a) => a.id !== id))}
         />
         <FormGrid>
-          <InputField label="Añadir fotografía" type="file" accept="image/*" multiple
+          <InputField label={t("labelAddPhoto")} type="file" accept="image/*" multiple
             onChange={(e) => setFiles((current) => [...current, ...Array.from(e.target.files ?? [])])} />
-          <InputField label="Añadir fichero" type="file" multiple
+          <InputField label={t("labelAddFile")} type="file" multiple
             onChange={(e) => setFiles((current) => [...current, ...Array.from(e.target.files ?? [])])} />
         </FormGrid>
         {files.length > 0 && (
@@ -484,36 +484,36 @@ export function MaintenancePage() {
       <div className="filter-bar">
         <input
           className="form-input"
-          placeholder="Buscar tarea…"
+          placeholder={t("searchTask")}
           value={filterSearch}
           onChange={(e) => setFilterSearch(e.target.value)}
           style={{ minWidth: "180px" }}
         />
         <select className="form-input form-select" value={filterSystem} onChange={(e) => setFilterSystem(e.target.value)}>
-          <option value="">Todos los sistemas</option>
+          <option value="">{t("allSystems")}</option>
           {boatSystems.map((s) => <option key={s.id} value={s.id}>{sysName(s, locale)}</option>)}
         </select>
         <select className="form-input form-select" value={filterKind} onChange={(e) => setFilterKind(e.target.value)}>
-          <option value="">Todos los tipos</option>
+          <option value="">{t("allKinds")}</option>
           {KINDS.map((kind) => <option key={kind} value={kind}>{t(`kind_${kind}`)}</option>)}
         </select>
         <select className="form-input form-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="">Todos los estados</option>
+          <option value="">{t("allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
         </select>
         <select className="form-input form-select" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-          <option value="">Todas las prioridades</option>
+          <option value="">{t("allPriorities")}</option>
           {PRIORITIES.map((p) => <option key={p} value={p}>{t(p)}</option>)}
         </select>
         <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.88rem", cursor: "pointer", whiteSpace: "nowrap" }}>
           <input type="checkbox" checked={filterScheduled} onChange={(e) => setFilterScheduled(e.target.checked)} />
-          Solo programadas
+          {t("onlyScheduled")}
         </label>
         <select className="form-input form-select" value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} style={{ minWidth: "140px" }}>
-          <option value="dueDate">Ordenar: Fecha</option>
-          <option value="priority">Ordenar: Prioridad</option>
-          <option value="status">Ordenar: Estado</option>
-          <option value="system">Ordenar: Sistema</option>
+          <option value="dueDate">{t("sortByDate")}</option>
+          <option value="priority">{t("sortByPriority")}</option>
+          <option value="status">{t("sortByStatus")}</option>
+          <option value="system">{t("sortBySystem")}</option>
         </select>
         <button
           type="button"
@@ -532,9 +532,9 @@ export function MaintenancePage() {
         <div className="data-table">
           <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 7rem 3fr 1.4fr 6rem 6rem 5.5rem auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((t) => t.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>Fecha</span><span>Tarea</span><span style={{marginLeft:"-15px"}}>Sistema</span><span style={{marginLeft:"-19px"}}>Tipo</span><span style={{marginLeft:"-23px"}}>Estado</span><span style={{marginLeft:"-27px"}}>Prioridad</span><span></span>
+            <span>{t("colDate")}</span><span>{t("colTask")}</span><span style={{marginLeft:"-15px"}}>{t("system")}</span><span style={{marginLeft:"-19px"}}>{t("kind")}</span><span style={{marginLeft:"-23px"}}>{t("status")}</span><span style={{marginLeft:"-27px"}}>{t("priority")}</span><span></span>
           </div>
-          {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay tareas de mantenimiento.</p></div>}
+          {!loading && filtered.length === 0 && <div className="empty-state"><p>{t("noMaintenanceTasks")}</p></div>}
           {filtered.map((task) => {
             const isDone = task.status === "done" || task.status === "cancelled";
             const isOverdue = !isDone && task.dueDate && task.dueDate < today;

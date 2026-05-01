@@ -143,7 +143,7 @@ export function FutureActionsPage() {
       <section className="page">
         <div className="section-title">
           <span className="eyebrow">{t("futureActions")}</span>
-          <h2>Acciones futuras planificadas</h2>
+          <h2>{t("futureActions")}</h2>
         </div>
         <div className="empty-state"><p>Selecciona un barco en la barra lateral para ver sus acciones futuras.</p></div>
       </section>
@@ -155,7 +155,7 @@ export function FutureActionsPage() {
       <div className="page-header">
         <div className="section-title">
           <span className="eyebrow">{t("futureActions")} · {boatName}</span>
-          <h2>Acciones futuras planificadas</h2>
+          <h2>{t("futureActions")}</h2>
         </div>
         <SelectModeHeaderButtons selectMode={selectMode} onEnter={enterSelectMode} onCancel={exitSelectMode}>
           {isSupabaseConfigured && (
@@ -166,7 +166,7 @@ export function FutureActionsPage() {
 
       <div className="filter-bar">
         <select className="form-input form-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="">Todos los estados</option>
+          <option value="">{t("allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
         </select>
       </div>
@@ -176,9 +176,9 @@ export function FutureActionsPage() {
         <div className="data-table">
           <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.9fr 0.9fr 0.9fr auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((a) => a.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>Acción</span><span>Sistema</span><span>Tipo</span><span>Prioridad</span><span>Estado</span><span></span>
+            <span>{t("colAction")}</span><span>{t("system")}</span><span>{t("kind")}</span><span>{t("priority")}</span><span>{t("status")}</span><span></span>
           </div>
-          {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay acciones futuras.</p></div>}
+          {!loading && filtered.length === 0 && <div className="empty-state"><p>{t("noData")}</p></div>}
           {filtered.map((a) => (
             <div className="data-table-row" key={a.id} style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.9fr 0.9fr 0.9fr auto" }}>
               <SelectRowCheckbox selectMode={selectMode} id={a.id} selected={selected} onToggle={toggleOne} disabled={deleting} />

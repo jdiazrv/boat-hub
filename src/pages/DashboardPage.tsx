@@ -73,7 +73,7 @@ export function DashboardPage() {
     .filter((h) => h.status === "planned" || h.status === "preparing")
     .sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""))[0] ?? null;
 
-  const boatLabel = activeBoat ? activeBoat.name : allBoatsList.length > 0 ? "Todos los barcos" : "Sin barcos";
+  const boatLabel = activeBoat ? activeBoat.name : allBoatsList.length > 0 ? t("allBoats") : t("noBoats");
   const today = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   return (
@@ -100,14 +100,14 @@ export function DashboardPage() {
           {pendingTasks.length} tareas pendientes
         </Link>
         <Link to="/preventive" className="dash-pill" data-warn={overduePerio.length > 0 || undefined}>
-          {overduePerio.length} periódicos vencidos
+          {overduePerio.length} {t("dashOverduePreventive")}
         </Link>
         <Link to="/observations" className="dash-pill" data-warn={openObs.length > 0 || undefined}>
           {openObs.length} observaciones abiertas
         </Link>
         {lowStock.length > 0 && (
           <Link to="/inventory" className="dash-pill" data-warn>
-            {lowStock.length} stock bajo mínimo
+            {lowStock.length} {t("dashLowStock")}
           </Link>
         )}
         <Link to="/purchases" className="dash-pill">
@@ -205,7 +205,7 @@ export function DashboardPage() {
         {/* Periódicos vencidos */}
         <article className="panel-card">
           <div className="panel-head">
-            <h3>Periódicos vencidos</h3>
+            <h3>{t("dashOverduePreventiveTitle")}</h3>
             <Link to="/preventive" style={{ fontSize: "0.8rem", color: "var(--accent)" }}>Ver todos →</Link>
           </div>
           <div className="list-stack" style={{ gap: "0.25rem" }}>
@@ -215,7 +215,7 @@ export function DashboardPage() {
                 <span style={{ fontSize: "0.82rem", color: "var(--pill-critical, #ef4444)", flexShrink: 0 }}>{fmt(task.nextDueDate)}</span>
               </Link>
             ))}
-            {overduePerio.length === 0 && <p style={{ color: "var(--text-soft)", margin: 0 }}>Todo al día.</p>}
+            {overduePerio.length === 0 && <p style={{ color: "var(--text-soft)", margin: 0 }}>{t("dashAllUpToDate")}</p>}
           </div>
         </article>
 

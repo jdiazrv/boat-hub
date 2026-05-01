@@ -248,8 +248,8 @@ export function PreventivePage() {
         >
           <option value="">Todas</option>
           <option value="overdue">Vencidas</option>
-          <option value="due_soon">Próximas (30 días)</option>
-          <option value="ok">Al día</option>
+          <option value="due_soon">{t("filterDueSoon30")}</option>
+          <option value="ok">{t("filterOk")}</option>
         </select>
         <span style={{ fontSize: "0.84rem", color: "var(--text-soft)" }}>
           {schedule.length} tareas en el calendario
@@ -258,7 +258,7 @@ export function PreventivePage() {
 
       {categories.length > 1 && (
         <div className="filter-bar" style={{ marginTop: "-0.25rem" }}>
-          {[{ id: "", name: "Todas las categorías" }, ...categories.map((c) => ({ id: c, name: c }))].map((c) => (
+          {[{ id: "", name: t("allCategories") }, ...categories.map((c) => ({ id: c, name: c }))].map((c) => (
             <button
               key={c.id}
               className={filterCategory === c.id ? "filter-chip active" : "filter-chip"}

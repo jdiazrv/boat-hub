@@ -36,9 +36,9 @@ function MarinaForm({
 
   return (
     <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-      <FormSection title="Identificación">
+      <FormSection title={t("sectionIdentification")}>
         <LocationSearchWithMap
-          label="Buscar en mapa"
+          label={t("labelSearchOnMap")}
           latitude={form.latitude}
           longitude={form.longitude}
           onPick={(place) => setForm((f) => ({ ...f, ...place }))}
@@ -48,23 +48,23 @@ function MarinaForm({
           <InputField label={t("country")} value={form.country ?? ""} onChange={(e) => set("country", e.target.value || null)} />
           <InputField label={t("region")} value={form.region ?? ""} onChange={(e) => set("region", e.target.value || null)} />
           <InputField label={t("address")} value={form.address ?? ""} onChange={(e) => set("address", e.target.value || null)} />
-          <InputField label="Tipo de amarre" value={form.mooringType ?? ""} onChange={(e) => set("mooringType", e.target.value || null)} />
-          <InputField label="Latitud" type="number" value={form.latitude ?? ""} onChange={(e) => set("latitude", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Longitud" type="number" value={form.longitude ?? ""} onChange={(e) => set("longitude", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelMooringType")} value={form.mooringType ?? ""} onChange={(e) => set("mooringType", e.target.value || null)} />
+          <InputField label={t("labelLatitude")} type="number" value={form.latitude ?? ""} onChange={(e) => set("latitude", e.target.value ? Number(e.target.value) : null)} />
+          <InputField label={t("labelLongitude")} type="number" value={form.longitude ?? ""} onChange={(e) => set("longitude", e.target.value ? Number(e.target.value) : null)} />
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Contacto">
+      <FormSection title={t("sectionContact")}>
         <FormGrid>
           <InputField label={t("phone")} value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value || null)} />
           <InputField label="Email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value || null)} />
-          <InputField label="Contacto" value={form.contactPerson ?? ""} onChange={(e) => set("contactPerson", e.target.value || null)} />
-          <InputField label="Canal VHF" value={form.vhfChannel ?? ""} onChange={(e) => set("vhfChannel", e.target.value || null)} />
+          <InputField label={t("labelContactPerson")} value={form.contactPerson ?? ""} onChange={(e) => set("contactPerson", e.target.value || null)} />
+          <InputField label={t("labelVhfChannel")} value={form.vhfChannel ?? ""} onChange={(e) => set("vhfChannel", e.target.value || null)} />
           <InputField label={t("website")} value={form.website ?? ""} onChange={(e) => set("website", e.target.value || null)} />
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Servicios">
+      <FormSection title={t("sectionServices")}>
         <div className="form-checkbox-grid">
           <CheckboxField label={t("water")} checked={form.hasWater} onChange={(e) => set("hasWater", e.target.checked)} />
           <CheckboxField label={t("electricity")} checked={form.hasElectricity} onChange={(e) => set("hasElectricity", e.target.checked)} />
@@ -74,11 +74,11 @@ function MarinaForm({
         </div>
       </FormSection>
 
-      <FormSection title="Otros">
+      <FormSection title={t("sectionOther")}>
         <FormGrid>
           <InputField label={t("rating")} type="number" value={form.rating ?? ""} onChange={(e) => set("rating", e.target.value ? Number(e.target.value) : null)} />
-          <InputField label="Fecha de información" type="date" value={form.infoDate ?? ""} onChange={(e) => set("infoDate", e.target.value || null)} />
-          <InputField label="Fuente" value={form.source ?? ""} onChange={(e) => set("source", e.target.value || null)} />
+          <InputField label={t("labelInfoDate")} type="date" value={form.infoDate ?? ""} onChange={(e) => set("infoDate", e.target.value || null)} />
+          <InputField label={t("labelSource")} value={form.source ?? ""} onChange={(e) => set("source", e.target.value || null)} />
         </FormGrid>
         <TextareaField label={t("notes")} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
@@ -156,7 +156,7 @@ export function MarinasPage() {
       )}
 
       <div className="filter-bar">
-        <input className="form-input" placeholder="Buscar por nombre o país…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: "240px" }} />
+        <input className="form-input" placeholder={t("placeholderSearchByNameOrCountry")} value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: "240px" }} />
       </div>
 
       {error && !modal && (

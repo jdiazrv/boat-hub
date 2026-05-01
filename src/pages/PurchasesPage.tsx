@@ -157,7 +157,7 @@ export function PurchasesPage() {
 
       <div className="filter-bar">
         <select className="form-input form-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="">Todos los estados</option>
+          <option value="">{t("allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
         </select>
       </div>
@@ -167,9 +167,9 @@ export function PurchasesPage() {
         <div className="data-table">
           <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.7fr 0.7fr 0.8fr 0.8fr auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((p) => p.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>Artículo</span><span>Sistema</span><span>Cant.</span><span>Prioridad</span><span>Estado</span><span>Coste est.</span><span></span>
+            <span>{t("colArticle")}</span><span>{t("system")}</span><span>{t("colQty")}</span><span>{t("priority")}</span><span>{t("status")}</span><span>{t("colEstCost")}</span><span></span>
           </div>
-          {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay compras pendientes.</p></div>}
+          {!loading && filtered.length === 0 && <div className="empty-state"><p>{t("noData")}</p></div>}
           {filtered.map((p) => (
             <div className="data-table-row" key={p.id} style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.7fr 0.7fr 0.8fr 0.8fr auto" }}>
               <SelectRowCheckbox selectMode={selectMode} id={p.id} selected={selected} onToggle={toggleOne} disabled={deleting} />

@@ -446,6 +446,135 @@ const dictionaries: Record<Locale, Dictionary> = {
     // Boolean yes/no
     yes: "Si",
     no: "No",
+    // Inventory categories
+    catMainEquipment: "Equipo principal",
+    catElectronics: "Electronica",
+    catSafety: "Seguridad",
+    catSailsRigging: "Velas y jarcia",
+    catAnchoring: "Fondeo",
+    catTools: "Herramientas",
+    catSparePart: "Repuesto",
+    catConsumable: "Consumible",
+    catAccessories: "Accesorios",
+    catDocumentation: "Documentacion",
+    catOther: "Otros",
+    // Inventory statuses
+    invStatusOnBoard: "A bordo",
+    invStatusOffBoard: "Fuera del barco",
+    invStatusInRepair: "En reparacion",
+    invStatusDisposed: "Dado de baja",
+    // Inventory form / filter labels
+    allCategories: "Todas las categorias",
+    searchCatalog: "Buscar en catalogo",
+    searchByCodeOrName: "Buscar por codigo o nombre",
+    sectionStatusAndLocation: "Estado y ubicacion",
+    sectionAcquisition: "Adquisicion",
+    // Maintenance form sections
+    sectionChooseFromCatalog: "Elegir accion del catalogo",
+    sectionNotInCatalog: "No esta en el catalogo",
+    sectionClassification: "Clasificacion",
+    sectionPlanning: "Planificacion",
+    sectionAttachments: "Adjuntos",
+    // Maintenance / HaulOut form labels
+    labelAddPhoto: "Anadir fotografia",
+    labelAddFile: "Anadir fichero",
+    labelPerformedBy: "Realizado por",
+    labelSearchAction: "Buscar accion",
+    placeholderNameDescSystem: "Nombre, descripcion o sistema",
+    // Shipyard / Marina form sections
+    sectionTechnicalCapacity: "Capacidad tecnica",
+    sectionRates: "Tarifas",
+    sectionContact: "Contacto",
+    sectionServices: "Servicios",
+    sectionOther: "Otros",
+    placeholderSearchByNameOrCountry: "Buscar por nombre o pais",
+    // BoatSystems
+    addSystemFromCatalog: "Anadir sistema del catalogo",
+    // Preventive filter options
+    filterDueSoon30: "Proximas (30 dias)",
+    filterOk: "Al dia",
+    // Sail types
+    sailSpinnakerSym: "Spinnaker simetrico",
+    sailSpinnakerAsym: "Spinnaker asimetrico",
+    sailCodeZero: "Code Zero",
+    sailGennaker: "Gennaker",
+    sailTrysail: "Trysail",
+    sailStormJib: "Storm jib",
+    // Fuel table headers
+    colDate: "Fecha",
+    colType: "Tipo",
+    colQuantity: "Cantidad",
+    colPricePerUnit: "Precio/u",
+    colPlace: "Lugar",
+    colHours: "Horas",
+    // Dashboard strings
+    dashOverduePreventive: "periodicos vencidos",
+    dashLowStock: "stock bajo minimo",
+    dashOverduePreventiveTitle: "Periodicos vencidos",
+    dashAllUpToDate: "Todo al dia.",
+    // Purchases table headers
+    colArticle: "Articulo",
+    colQty: "Cant.",
+    colEstCost: "Coste est.",
+    // Boats table / form
+    colYear: "Ano",
+    colPropulsion: "Propulsion",
+    // Filter dropdowns
+    allStatuses: "Todos los estados",
+    allPriorities: "Todas las prioridades",
+    onlyScheduled: "Solo programadas",
+    sortByDate: "Ordenar: Fecha",
+    sortByPriority: "Ordenar: Prioridad",
+    sortByStatus: "Ordenar: Estado",
+    sortBySystem: "Ordenar: Sistema",
+    onlyLowStock: "Solo stock bajo",
+    noMaintenanceTasks: "No hay tareas de mantenimiento.",
+    noObservations: "No hay observaciones.",
+    noActionsMatchFilter: "No hay tareas disponibles con estos filtros.",
+    observationsTitle: "Observaciones e incidencias",
+    colObservation: "Observacion",
+    colAction: "Accion",
+    colTask: "Tarea",
+    // Dashboard
+    allBoats: "Todos los barcos",
+    noBoats: "Sin barcos",
+    // Search placeholders
+    searchTask: "Buscar tarea...",
+    // Admin users strings
+    noBoatsMatchSearch: "No hay barcos con esa busqueda.",
+    allBoatsAlreadySelected: "Todos los barcos ya estan seleccionados.",
+    moreResults: "resultados mas. Sigue escribiendo para acotar.",
+    allBoatsAccess: "Todos los barcos",
+    inviteAccepted: "Invitacion aceptada",
+    invitePending: "Invitacion pendiente",
+    noInviteSent: "Sin invitacion enviada",
+    globalAccess: "Acceso global · administrador total",
+    // Marina / Shipyard form field labels
+    labelLatitude: "Latitud",
+    labelLongitude: "Longitud",
+    labelMooringType: "Tipo de amarre",
+    labelContactPerson: "Contacto",
+    labelVhfChannel: "Canal VHF",
+    labelShipyardServices: "Talleres / servicios disponibles",
+    labelLiftInOut: "Izada / botadura",
+    labelPressureWash: "Lavado alta presion",
+    labelDailyStorage: "Estancia diaria",
+    labelMonthlyStorage: "Estancia mensual",
+    labelAnnualStorage: "Estancia anual",
+    labelCurrency: "Moneda",
+    labelVat: "IVA (%)",
+    labelInfoDate: "Fecha de informacion",
+    labelSource: "Fuente",
+    labelSearchOnMap: "Buscar en mapa",
+    noBaots: "Sin barcos seleccionados",
+    noBoatsSelected: "Sin barcos seleccionados",
+    noBoatsAssigned: "Sin barcos asignados",
+    removeBoat: "Quitar",
+    inviteStatusAccepted: "Aceptada",
+    inviteStatusPending: "Pendiente",
+    inviteStatusNone: "Sin invitacion",
+    allShort: "Todos",
+    mixed: "Varios",
   },
   en: {
     appName: "Boat Maintenance Hub",
@@ -889,6 +1018,134 @@ const dictionaries: Record<Locale, Dictionary> = {
     // Boolean yes/no
     yes: "Yes",
     no: "No",
+    // Inventory categories
+    catMainEquipment: "Main equipment",
+    catElectronics: "Electronics",
+    catSafety: "Safety",
+    catSailsRigging: "Sails & rigging",
+    catAnchoring: "Anchoring",
+    catTools: "Tools",
+    catSparePart: "Spare part",
+    catConsumable: "Consumable",
+    catAccessories: "Accessories",
+    catDocumentation: "Documentation",
+    catOther: "Other",
+    // Inventory statuses
+    invStatusOnBoard: "On board",
+    invStatusOffBoard: "Off board",
+    invStatusInRepair: "In repair",
+    invStatusDisposed: "Disposed",
+    // Inventory form / filter labels
+    allCategories: "All categories",
+    searchCatalog: "Search catalog",
+    searchByCodeOrName: "Search by code or name",
+    sectionStatusAndLocation: "Status & location",
+    sectionAcquisition: "Acquisition",
+    // Maintenance form sections
+    sectionChooseFromCatalog: "Choose action from catalog",
+    sectionNotInCatalog: "Not in catalog",
+    sectionClassification: "Classification",
+    sectionPlanning: "Planning",
+    sectionAttachments: "Attachments",
+    // Maintenance / HaulOut form labels
+    labelAddPhoto: "Add photo",
+    labelAddFile: "Add file",
+    labelPerformedBy: "Performed by",
+    labelSearchAction: "Search action",
+    placeholderNameDescSystem: "Name, description or system",
+    // Shipyard / Marina form sections
+    sectionTechnicalCapacity: "Technical capacity",
+    sectionRates: "Rates",
+    sectionContact: "Contact",
+    sectionServices: "Services",
+    sectionOther: "Other",
+    placeholderSearchByNameOrCountry: "Search by name or country",
+    // BoatSystems
+    addSystemFromCatalog: "Add system from catalog",
+    // Preventive filter options
+    filterDueSoon30: "Due soon (30 days)",
+    filterOk: "Up to date",
+    // Sail types
+    sailSpinnakerSym: "Symmetric spinnaker",
+    sailSpinnakerAsym: "Asymmetric spinnaker",
+    sailCodeZero: "Code Zero",
+    sailGennaker: "Gennaker",
+    sailTrysail: "Trysail",
+    sailStormJib: "Storm jib",
+    // Fuel table headers
+    colDate: "Date",
+    colType: "Type",
+    colQuantity: "Quantity",
+    colPricePerUnit: "Price/u",
+    colPlace: "Place",
+    colHours: "Hours",
+    // Dashboard strings
+    dashOverduePreventive: "overdue periodics",
+    dashLowStock: "low stock",
+    dashOverduePreventiveTitle: "Overdue periodics",
+    dashAllUpToDate: "All up to date.",
+    // Purchases table headers
+    colArticle: "Article",
+    colQty: "Qty.",
+    colEstCost: "Est. cost",
+    // Boats table / form
+    colYear: "Year",
+    colPropulsion: "Propulsion",
+    // Filter dropdowns
+    allStatuses: "All statuses",
+    allPriorities: "All priorities",
+    onlyScheduled: "Scheduled only",
+    sortByDate: "Sort: Date",
+    sortByPriority: "Sort: Priority",
+    sortByStatus: "Sort: Status",
+    sortBySystem: "Sort: System",
+    onlyLowStock: "Low stock only",
+    noMaintenanceTasks: "No maintenance tasks.",
+    noObservations: "No observations.",
+    noActionsMatchFilter: "No tasks match these filters.",
+    observationsTitle: "Observations & issues",
+    colObservation: "Observation",
+    colAction: "Action",
+    colTask: "Task",
+    // Dashboard
+    allBoats: "All boats",
+    noBoats: "No boats",
+    // Search placeholders
+    searchTask: "Search task...",
+    // Admin users strings
+    noBoatsMatchSearch: "No boats match that search.",
+    allBoatsAlreadySelected: "All boats already selected.",
+    moreResults: "more results. Keep typing to narrow down.",
+    allBoatsAccess: "All boats",
+    inviteAccepted: "Invitation accepted",
+    invitePending: "Invitation pending",
+    noInviteSent: "No invitation sent",
+    globalAccess: "Global access · superuser",
+    // Marina / Shipyard form field labels
+    labelLatitude: "Latitude",
+    labelLongitude: "Longitude",
+    labelMooringType: "Mooring type",
+    labelContactPerson: "Contact person",
+    labelVhfChannel: "VHF channel",
+    labelShipyardServices: "Workshops / available services",
+    labelLiftInOut: "Lift in / out",
+    labelPressureWash: "Pressure wash",
+    labelDailyStorage: "Daily storage",
+    labelMonthlyStorage: "Monthly storage",
+    labelAnnualStorage: "Annual storage",
+    labelCurrency: "Currency",
+    labelVat: "VAT (%)",
+    labelInfoDate: "Info date",
+    labelSource: "Source",
+    labelSearchOnMap: "Search on map",
+    noBoatsSelected: "No boats selected",
+    noBoatsAssigned: "No boats assigned",
+    removeBoat: "Remove",
+    inviteStatusAccepted: "Accepted",
+    inviteStatusPending: "Pending",
+    inviteStatusNone: "No invitation",
+    allShort: "All",
+    mixed: "Various",
   }
 };
 
@@ -900,8 +1157,18 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+const STORAGE_KEY = "app_locale";
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("es");
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === "en" || stored === "es" ? stored : "es";
+  });
+
+  function setLocale(next: Locale) {
+    localStorage.setItem(STORAGE_KEY, next);
+    setLocaleState(next);
+  }
 
   const value = useMemo<I18nContextValue>(
     () => ({

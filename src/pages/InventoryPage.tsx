@@ -17,33 +17,31 @@ import { isSupabaseConfigured } from "../lib/supabase";
 import { useActiveBoat } from "../providers/ActiveBoatProvider";
 import { useAppData } from "../providers/AppDataProvider";
 
-const CATEGORIES: { value: InventoryCategory; label: string }[] = [
-  { value: "main_equipment", label: "Equipo principal" },
-  { value: "electronics", label: "Electrónica" },
-  { value: "safety", label: "Seguridad" },
-  { value: "sails_rigging", label: "Velas y jarcia" },
-  { value: "anchoring", label: "Fondeo" },
-  { value: "tools", label: "Herramientas" },
-  { value: "spare_part", label: "Repuesto" },
-  { value: "consumable", label: "Consumible" },
-  { value: "accessories", label: "Accesorios" },
-  { value: "documentation", label: "Documentación" },
-  { value: "other", label: "Otros" },
-];
-
-const STATUSES: { value: InventoryStatus; label: string }[] = [
-  { value: "on_board", label: "A bordo" },
-  { value: "off_board", label: "Fuera del barco" },
-  { value: "in_repair", label: "En reparación" },
-  { value: "disposed", label: "Dado de baja" },
-];
-
-function categoryLabel(cat: InventoryCategory) {
-  return CATEGORIES.find((c) => c.value === cat)?.label ?? cat;
+function useInventoryCategories() {
+  const { t } = useI18n();
+  return [
+    { value: "main_equipment" as InventoryCategory, label: t("catMainEquipment") },
+    { value: "electronics" as InventoryCategory, label: t("catElectronics") },
+    { value: "safety" as InventoryCategory, label: t("catSafety") },
+    { value: "sails_rigging" as InventoryCategory, label: t("catSailsRigging") },
+    { value: "anchoring" as InventoryCategory, label: t("catAnchoring") },
+    { value: "tools" as InventoryCategory, label: t("catTools") },
+    { value: "spare_part" as InventoryCategory, label: t("catSparePart") },
+    { value: "consumable" as InventoryCategory, label: t("catConsumable") },
+    { value: "accessories" as InventoryCategory, label: t("catAccessories") },
+    { value: "documentation" as InventoryCategory, label: t("catDocumentation") },
+    { value: "other" as InventoryCategory, label: t("catOther") },
+  ];
 }
 
-function statusLabel(s: InventoryStatus) {
-  return STATUSES.find((x) => x.value === s)?.label ?? s;
+function useInventoryStatuses() {
+  const { t } = useI18n();
+  return [
+    { value: "on_board" as InventoryStatus, label: t("invStatusOnBoard") },
+    { value: "off_board" as InventoryStatus, label: t("invStatusOffBoard") },
+    { value: "in_repair" as InventoryStatus, label: t("invStatusInRepair") },
+    { value: "disposed" as InventoryStatus, label: t("invStatusDisposed") },
+  ];
 }
 
 type FormPayload = Omit<InventoryItem, "id" | "boatName" | "systemName" | "system" | "minimum">;
@@ -73,7 +71,9 @@ function InventoryForm({
   loading: boolean;
   error: string | null;
 }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
+  const CATEGORIES = useInventoryCategories();
+  const STATUSES = useInventoryStatuses();
   const [step, setStep] = useState<"catalog" | "details">(editing || initial.name ? "details" : "catalog");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [catalogSystemFilter, setCatalogSystemFilter] = useState("");
@@ -140,16 +140,16 @@ function InventoryForm({
   if (step === "catalog") {
     return (
       <div className="form-stack">
-        <div style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Elegir del catálogo de inventario</div>
+        <div style={{ fontWeight: 600, marginBottom: "0.5rem" }}>{t("sectionChooseFromCatalog")}</div>
         <div className="form-boat-badge">{boatName}</div>
 
         <div className="filter-bar" style={{ marginBottom: "0.75rem" }}>
           <input
-            className="form-input" type="search" placeholder="Buscar en catálogo…"
+            className="form-input" type="search" placeholder={t("searchCatalog")}
             value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)}
           />
           <select className="form-input form-select" value={catalogSystemFilter} onChange={(e) => setCatalogSystemFilter(e.target.value)}>
-            <option value="">Todos los sistemas</option>
+            <option value="">{t("allSystems")}</option>
             {catalogSystems.map((code) => (
               <option key={code} value={code}>{getSystemLabel(code)}</option>
             ))}
@@ -174,14 +174,14 @@ function InventoryForm({
         </div>
 
         <div style={{ marginTop: "1rem", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
-          <div style={{ fontWeight: 600, marginBottom: "0.5rem" }}>No está en el catálogo</div>
+          <div style={{ fontWeight: 600, marginBottom: "0.5rem" }}>{t("sectionNotInCatalog")}</div>
           <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.5rem", alignItems: "end" }}>
             <div>
-              <label style={{ display: "block", fontSize: "0.82rem", marginBottom: "0.25rem" }}>Nombre</label>
-              <input className="form-input" value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Nombre del elemento" />
+              <label style={{ display: "block", fontSize: "0.82rem", marginBottom: "0.25rem" }}>{t("name")}</label>
+              <input className="form-input" value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder={t("name")} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "0.82rem", marginBottom: "0.25rem" }}>Categoría</label>
+              <label style={{ display: "block", fontSize: "0.82rem", marginBottom: "0.25rem" }}>{t("kind")}</label>
               <select className="form-input form-select" value={manualCategory} onChange={(e) => setManualCategory(e.target.value as InventoryCategory)}>
                 {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
@@ -189,13 +189,13 @@ function InventoryForm({
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.75rem" }}>
             <button className="btn-primary" disabled={!manualName.trim()} type="button" onClick={startManual}>
-              Continuar
+              {t("save")}
             </button>
           </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
-          <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
+          <button type="button" className="btn-ghost" onClick={onCancel}>{t("cancel")}</button>
         </div>
       </div>
     );
@@ -208,16 +208,16 @@ function InventoryForm({
 
   return (
     <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-      <FormSection title="Identificación">
+      <FormSection title={t("sectionIdentification")}>
         <div className="form-boat-badge">{boatName}</div>
         {!editing && (
           <button className="btn-ghost" type="button" style={{ alignSelf: "flex-start" }} onClick={() => setStep("catalog")}>
-            Cambiar elemento
+            {t("edit")}
           </button>
         )}
         <FormGrid>
           <SelectField
-            label="Categoría"
+            label={t("kind")}
             value={form.category}
             onChange={(e) => set("category", e.target.value as InventoryCategory)}
           >
@@ -252,7 +252,7 @@ function InventoryForm({
         <TextareaField label="Descripción" value={form.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
       </FormSection>
 
-      <FormSection title="Estado y ubicación">
+      <FormSection title={t("sectionStatusAndLocation")}>
         <FormGrid>
           <SelectField
             label="Estado"
@@ -283,7 +283,7 @@ function InventoryForm({
                 onChange={(e) => set("stock", Number(e.target.value))}
               />
               <InputField
-                label="Stock mínimo"
+                label={t("minimumStock")}
                 type="number"
                 value={form.minimumStock ?? ""}
                 onChange={(e) => set("minimumStock", e.target.value ? Number(e.target.value) : null)}
@@ -293,7 +293,7 @@ function InventoryForm({
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Adquisición">
+      <FormSection title={t("sectionAcquisition")}>
         <FormGrid>
           <InputField label="Proveedor" value={form.supplier ?? ""} onChange={(e) => set("supplier", e.target.value || null)} />
           <InputField label="Fecha de compra" type="date" value={form.purchaseDate ?? ""} onChange={(e) => set("purchaseDate", e.target.value || null)} />
@@ -313,6 +313,8 @@ function InventoryForm({
 
 export function InventoryPage() {
   const { t, locale } = useI18n();
+  const CATEGORIES = useInventoryCategories();
+  const STATUSES = useInventoryStatuses();
   const { inventoryItems, inventoryItemsFull, refresh, loading } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
@@ -480,20 +482,20 @@ export function InventoryPage() {
 
       <div className="filter-bar">
         <select className="form-input form-select" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value as InventoryCategory | "")}>
-          <option value="">Todas las categorías</option>
+          <option value="">{t("allCategories")}</option>
           {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
         <select className="form-input form-select" value={filterSystem} onChange={(e) => setFilterSystem(e.target.value)}>
-          <option value="">Todos los sistemas</option>
+          <option value="">{t("allSystems")}</option>
           {boatSystems.map((s) => <option key={s.id} value={s.id}>{sysName(s, locale)}</option>)}
         </select>
         <select className="form-input form-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as InventoryStatus | "")}>
-          <option value="">Todos los estados</option>
+          <option value="">{t("allStatuses")}</option>
           {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
         <label className="form-checkbox-row" style={{ color: "var(--text-soft)" }}>
           <input type="checkbox" checked={filterLow} onChange={(e) => setFilterLow(e.target.checked)} />
-          <span>Solo stock bajo</span>
+          <span>{t("onlyLowStock")}</span>
         </label>
       </div>
 
@@ -539,13 +541,13 @@ export function InventoryPage() {
                   {item.reference && <span className="data-table-cell-muted"> · Ref: {item.reference}</span>}
                 </div>
                 <span className="data-table-cell-muted">{item.systemName}</span>
-                <span><span className="pill">{categoryLabel(item.category)}</span></span>
+                <span><span className="pill">{CATEGORIES.find((c) => c.value === item.category)?.label ?? item.category}</span></span>
                 <span className={isLow ? "stock-alert" : ""}>
                   {item.category === "spare_part" || item.category === "consumable"
                     ? `${item.stock} / mín ${minStock}`
                     : item.quantity}
                 </span>
-                <span className="data-table-cell-muted">{statusLabel(item.status)}</span>
+                <span className="data-table-cell-muted">{STATUSES.find((s) => s.value === item.status)?.label ?? item.status}</span>
                 <span className="data-table-cell-muted">{item.purchaseDate ?? "-"}</span>
                 <div className="row-actions">
                   {isSupabaseConfigured && (

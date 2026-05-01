@@ -7,22 +7,22 @@ import { isSupabaseConfigured } from "../lib/supabase";
 import { useActiveBoat } from "../providers/ActiveBoatProvider";
 import { useAppData } from "../providers/AppDataProvider";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  main_equipment: "Equipo principal",
-  electronics: "Electrónica",
-  safety: "Seguridad",
-  sails_rigging: "Velas y jarcia",
-  anchoring: "Fondeo",
-  tools: "Herramientas",
-  spare_part: "Repuesto",
-  consumable: "Consumible",
-  accessories: "Accesorios",
-  documentation: "Documentación",
-  other: "Otros",
-};
-
 export function InventoryCatalogPage() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    main_equipment: t("catMainEquipment"),
+    electronics: t("catElectronics"),
+    safety: t("catSafety"),
+    sails_rigging: t("catSailsRigging"),
+    anchoring: t("catAnchoring"),
+    tools: t("catTools"),
+    spare_part: t("catSparePart"),
+    consumable: t("catConsumable"),
+    accessories: t("catAccessories"),
+    documentation: t("catDocumentation"),
+    other: t("catOther"),
+  };
   const { activeBoatId, activeBoat } = useActiveBoat();
   const { systemCatalog } = useAppData();
   const boatName = activeBoat?.name ?? "";
@@ -203,17 +203,17 @@ export function InventoryCatalogPage() {
 
       <div className="filter-bar">
         <input
-          className="form-input" type="search" placeholder="Buscar elemento…"
+          className="form-input" type="search" placeholder={t("searchByCodeOrName")}
           value={search} onChange={(e) => setSearch(e.target.value)}
         />
         <select className="form-input form-select" value={systemFilter} onChange={(e) => setSystemFilter(e.target.value)}>
-          <option value="">Todos los sistemas</option>
+          <option value="">{t("allSystems")}</option>
           {catalogSystems.map((s) => (
             <option key={s.code} value={s.code}>{locale === "es" ? s.nameEs : s.nameEn}</option>
           ))}
         </select>
         <select className="form-input form-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          <option value="">Todas las categorías</option>
+          <option value="">{t("allCategories")}</option>
           {Object.entries(CATEGORY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.88rem", cursor: "pointer", whiteSpace: "nowrap" }}>

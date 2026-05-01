@@ -9,7 +9,7 @@ import { useActiveBoat } from "../providers/ActiveBoatProvider";
 import { useAppData } from "../providers/AppDataProvider";
 
 export function BoatSystemsPage() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const { activeBoatId, activeBoat } = useActiveBoat();
   const { systemCatalog } = useAppData();
   const [systems, setSystems] = useState<BoatSystem[]>([]);
@@ -140,7 +140,7 @@ export function BoatSystemsPage() {
               onChange={(e) => setCatalogSystemId(e.target.value)}
               style={{ minWidth: "16rem" }}
             >
-              <option value="">Añadir sistema del catálogo…</option>
+              <option value="">{t("addSystemFromCatalog")}…</option>
               {availableCatalogSystems.map((s) => (
                 <option key={s.id} value={s.id}>{locale === 'en' ? (s.name_en || s.name_es) : (s.name_es || s.name_en)}</option>
               ))}

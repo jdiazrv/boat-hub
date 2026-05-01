@@ -155,7 +155,7 @@ function HaulOutTaskForm({
         <TextareaField label={t("description")} value={form.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
       </FormSection>
 
-      <FormSection title="Clasificación">
+      <FormSection title={t("sectionClassification")}>
         <FormGrid>
           <SelectField label={t("kind")} value={form.kind} onChange={(e) => set("kind", e.target.value as typeof form.kind)}>
             {KINDS.map((k) => <option key={k} value={k}>{t(`kind_${k}`)}</option>)}
@@ -169,10 +169,10 @@ function HaulOutTaskForm({
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Planificación">
+      <FormSection title={t("sectionPlanning")}>
         <FormGrid>
           <InputField label={t("responsible")} value={form.responsible ?? ""} onChange={(e) => set("responsible", e.target.value || null)} />
-          <InputField label="Realizado por" value={form.performedBy ?? ""} onChange={(e) => set("performedBy", e.target.value || null)} />
+          <InputField label={t("labelPerformedBy")} value={form.performedBy ?? ""} onChange={(e) => set("performedBy", e.target.value || null)} />
           <InputField label={t("doneDate")} type="date" value={form.doneDate ?? ""} onChange={(e) => set("doneDate", e.target.value || null)} />
           <InputField label="Horas de motor" type="number" value={form.engineHours ?? ""} onChange={(e) => set("engineHours", e.target.value ? Number(e.target.value) : null)} />
           <InputField label={t("cost")} type="number" value={form.cost ?? ""} onChange={(e) => set("cost", e.target.value ? Number(e.target.value) : null)} />
@@ -180,11 +180,11 @@ function HaulOutTaskForm({
         <TextareaField label={t("notes")} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
 
-      <FormSection title="Adjuntos">
+      <FormSection title={t("sectionAttachments")}>
         <AttachmentGallery attachments={attachments} onDeleted={(id) => setAttachments((p) => p.filter((a) => a.id !== id))} />
         <FormGrid>
-          <InputField label="Añadir fotografía" type="file" accept="image/*" multiple onChange={(e) => setFiles((p) => [...p, ...Array.from(e.target.files ?? [])])} />
-          <InputField label="Añadir fichero" type="file" multiple onChange={(e) => setFiles((p) => [...p, ...Array.from(e.target.files ?? [])])} />
+          <InputField label={t("labelAddPhoto")} type="file" accept="image/*" multiple onChange={(e) => setFiles((p) => [...p, ...Array.from(e.target.files ?? [])])} />
+          <InputField label={t("labelAddFile")} type="file" multiple onChange={(e) => setFiles((p) => [...p, ...Array.from(e.target.files ?? [])])} />
         </FormGrid>
         {files.length > 0 && (
           <div className="attachment-preview-list">

@@ -26,6 +26,7 @@ function BoatAccessPicker({
   selectedBoatIds: string[];
   onToggle: (boatId: string) => void;
 }) {
+  const { t } = useI18n();
   const [boatSearch, setBoatSearch] = useState("");
   const selectedBoats = boats.filter((boat) => selectedBoatIds.includes(boat.id));
   const normalizedSearch = boatSearch.trim().toLowerCase();
@@ -61,11 +62,11 @@ function BoatAccessPicker({
               type="button"
             >
               <span>{boat.name}</span>
-              <small>Quitar</small>
+              <small>{t("removeBoat")}</small>
             </button>
           ))
         ) : (
-          <span className="assignment-pill muted">Sin barcos seleccionados</span>
+          <span className="assignment-pill muted">{t("noBoatsSelected")}</span>
         )}
       </div>
 
@@ -98,13 +99,13 @@ function BoatAccessPicker({
 
         {!matchingBoats.length && (
           <span className="field-hint">
-            {normalizedSearch ? "No hay barcos con esa busqueda." : "Todos los barcos ya estan seleccionados."}
+            {normalizedSearch ? t("noBoatsMatchSearch") : t("allBoatsAlreadySelected")}
           </span>
         )}
 
         {hiddenMatchCount > 0 && (
           <span className="field-hint">
-            {hiddenMatchCount} resultados mas. Sigue escribiendo para acotar.
+            {hiddenMatchCount} {t("moreResults")}
           </span>
         )}
       </div>
@@ -510,14 +511,14 @@ export function AdminUsersPage() {
                       <td>
                         <span className={`status-chip ${user.inviteStatus}`}>
                           {user.inviteStatus === "accepted"
-                            ? "Aceptada"
+                            ? t("inviteStatusAccepted")
                             : user.inviteStatus === "pending"
-                              ? "Pendiente"
-                              : "Sin invitacion"}
+                              ? t("inviteStatusPending")
+                              : t("inviteStatusNone")}
                         </span>
                       </td>
-                      <td>{user.isSuperuser ? "Todos" : user.assignments.length}</td>
-                      <td>{hasMixedRoles(user) ? "Varios" : getRoleLabel(getUserRole(user))}</td>
+                      <td>{user.isSuperuser ? t("allShort") : user.assignments.length}</td>
+                      <td>{hasMixedRoles(user) ? t("mixed") : getRoleLabel(getUserRole(user))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -552,20 +553,20 @@ export function AdminUsersPage() {
                     <p>
                       {managedUser.email} ·{" "}
                       {managedUser.inviteStatus === "accepted"
-                        ? "Invitacion aceptada"
+                        ? t("inviteAccepted")
                         : managedUser.inviteStatus === "pending"
-                          ? "Invitacion pendiente"
-                          : "Sin invitacion enviada"}
+                          ? t("invitePending")
+                          : t("noInviteSent")}
                     </p>
                   </div>
                   <span className="pill">
-                    {managedUser.isSuperuser ? "Todos los barcos" : `${managedUser.assignments.length} barcos`}
+                    {managedUser.isSuperuser ? t("allBoatsAccess") : `${managedUser.assignments.length} ${t("boats")}`}
                   </span>
                 </div>
 
                 <div className="assignment-list">
                   {managedUser.isSuperuser ? (
-                    <span className="assignment-pill">Acceso global · administrador total</span>
+                    <span className="assignment-pill">{t("globalAccess")}</span>
                   ) : managedUser.assignments.length ? (
                     managedUser.assignments.map((assignment) => (
                       <span className="assignment-pill" key={assignment.membershipId}>
@@ -573,7 +574,7 @@ export function AdminUsersPage() {
                       </span>
                     ))
                   ) : (
-                    <span className="assignment-pill muted">Sin barcos asignados</span>
+                    <span className="assignment-pill muted">{t("noBoatsAssigned")}</span>
                   )}
                 </div>
 

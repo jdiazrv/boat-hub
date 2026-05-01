@@ -138,9 +138,9 @@ export function ObservationsPage() {
       <section className="page">
         <div className="section-title">
           <span className="eyebrow">{t("observations")}</span>
-          <h2>Observaciones e incidencias</h2>
+          <h2>{t("observationsTitle")}</h2>
         </div>
-        <div className="empty-state"><p>Selecciona un barco en la barra lateral para ver sus observaciones.</p></div>
+        <div className="empty-state"><p>{t("noBoatSelected")}</p></div>
       </section>
     );
   }
@@ -150,7 +150,7 @@ export function ObservationsPage() {
       <div className="page-header">
         <div className="section-title">
           <span className="eyebrow">{t("observations")} · {boatName}</span>
-          <h2>Observaciones e incidencias</h2>
+          <h2>{t("observationsTitle")}</h2>
         </div>
         <SelectModeHeaderButtons selectMode={selectMode} onEnter={enterSelectMode} onCancel={exitSelectMode}>
           {isSupabaseConfigured && (
@@ -161,7 +161,7 @@ export function ObservationsPage() {
 
       <div className="filter-bar">
         <select className="form-input form-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="">Todos los estados</option>
+          <option value="">{t("allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
         </select>
       </div>
@@ -171,9 +171,9 @@ export function ObservationsPage() {
         <div className="data-table">
           <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.9fr 0.9fr auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((o) => o.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>Observación</span><span>Sistema</span><span>Prioridad</span><span>Estado</span><span></span>
+            <span>{t("colObservation")}</span><span>{t("system")}</span><span>{t("priority")}</span><span>{t("status")}</span><span></span>
           </div>
-          {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay observaciones.</p></div>}
+          {!loading && filtered.length === 0 && <div className="empty-state"><p>{t("noObservations")}</p></div>}
           {filtered.map((o) => (
             <div className="data-table-row" key={o.id} style={{ gridTemplateColumns: "1.5rem 2fr 1fr 0.9fr 0.9fr auto" }}>
               <SelectRowCheckbox selectMode={selectMode} id={o.id} selected={selected} onToggle={toggleOne} disabled={deleting} />
