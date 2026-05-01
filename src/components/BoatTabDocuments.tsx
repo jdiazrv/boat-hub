@@ -125,10 +125,14 @@ export function BoatTabDocuments({ boatId, docs, onRefresh, canEdit }: {
 
   async function handleOpen(doc: BoatDocument) {
     if (!doc.storagePath) return;
+    // Open the window synchronously (before any await) to avoid popup blockers,
+    // then navigate it once the signed URL is ready.
+    const win = window.open("", "_blank");
     try {
       const url = await db.getBoatDocumentUrl(doc.storagePath);
-      window.open(url, "_blank");
+      if (win) win.location.href = url;
     } catch {
+      win?.close();
       alert(t("noData"));
     }
   }
