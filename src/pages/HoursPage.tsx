@@ -4,6 +4,7 @@ import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowChe
 import * as db from "../lib/db";
 import type { HourCounter, HourLog } from "../lib/types";
 import { FormActions, FormGrid, FormSection, InputField, SelectField, TextareaField } from "../components/FormField";
+import { LocationSearch } from "../components/LocationSearch";
 import { Modal } from "../components/Modal";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
@@ -51,6 +52,9 @@ function HourLogForm({
             onChange={(e) => set("hours", Number(e.target.value))} />
           <InputField label="Registrado por" value={form.loggedBy ?? ""}
             onChange={(e) => set("loggedBy", e.target.value || null)} />
+          <div style={{ gridColumn: "1 / -1" }}>
+            <LocationSearch label="Lugar" value={form.location ?? null} onChange={(v) => set("location", v)} />
+          </div>
         </FormGrid>
         <TextareaField label={t("notes")} value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
@@ -98,7 +102,7 @@ export function HoursPage() {
   const EMPTY_LOG: Omit<HourLog, "id" | "boatName" | "counterName"> = {
     boatId: activeBoatId ?? "", hourCounterId: "",
     loggedAt: new Date().toISOString().slice(0, 10),
-    hours: lastHours ?? 0, notes: null, loggedBy: null,
+    hours: lastHours ?? 0, location: null, notes: null, loggedBy: null,
   };
 
   function openCreate() { setEditing(null); setError(null); setModal("create"); }
@@ -192,16 +196,17 @@ export function HoursPage() {
       <article className="panel-card">
         {loading && <LoadingOverlay />}
         <div className="data-table">
-          <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 1.5fr 1fr 0.8fr auto" }}>
+          <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 1.2fr 0.8fr 1fr 0.8fr auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((l) => l.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>Contador</span><span>Fecha</span><span>Horas</span><span></span>
+            <span>Contador</span><span>Fecha</span><span>Lugar</span><span>Horas</span><span></span>
           </div>
           {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay registros de horas.</p></div>}
           {filtered.map((l) => (
-            <div className="data-table-row" key={l.id} style={{ gridTemplateColumns: "1.5rem 1.5fr 1fr 0.8fr auto" }}>
+            <div className="data-table-row" key={l.id} style={{ gridTemplateColumns: "1.5rem 1.2fr 0.8fr 1fr 0.8fr auto" }}>
               <SelectRowCheckbox selectMode={selectMode} id={l.id} selected={selected} onToggle={toggleOne} disabled={deleting} />
               <span>{l.counterName}</span>
-              <span className="data-table-cell-muted">{l.loggedAt}</span>
+              <span className="data-table-cell-muted">{l.loggedAt.slice(0, 10)}</span>
+              <span className="data-table-cell-muted">{l.location ?? "-"}</span>
               <strong>{l.hours} h</strong>
               <div className="row-actions">
                 {isSupabaseConfigured && (
@@ -220,7 +225,7 @@ export function HoursPage() {
           <HourLogForm
             initial={editing
               ? { boatId: editing.boatId, hourCounterId: editing.hourCounterId,
-                  loggedAt: editing.loggedAt, hours: editing.hours, notes: editing.notes, loggedBy: editing.loggedBy }
+                  loggedAt: editing.loggedAt, hours: editing.hours, location: editing.location, notes: editing.notes, loggedBy: editing.loggedBy }
               : EMPTY_LOG}
             boatName={boatName}
             counters={counters}

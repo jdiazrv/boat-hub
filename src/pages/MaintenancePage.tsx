@@ -192,11 +192,9 @@ function TaskForm({
       <FormSection title="Tarea">
         <div className="form-boat-badge">{boatName}</div>
         <HourCountersSummary counters={hourCounters} />
-        {!editing && (
-          <button className="btn-ghost" type="button" onClick={() => setStep("catalog")}>
-            Cambiar acción
-          </button>
-        )}
+        <button className="btn-ghost" type="button" onClick={() => setStep("catalog")}>
+          Cambiar acción
+        </button>
         <SelectField label={t("system")} value={form.boatSystemId ?? ""}
           onChange={(e) => { set("boatSystemId", e.target.value || null); set("boatComponentId", null); }}>
           <option value="">-- Sistema --</option>
@@ -530,9 +528,9 @@ export function MaintenancePage() {
       <article className="panel-card">
         {loading && <LoadingOverlay />}
         <div className="data-table">
-          <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 7rem 3fr 1.4fr 6rem 6rem 5.5rem auto" }}>
+          <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 7rem 5rem 3fr 1.4fr 6rem 6rem 5.5rem auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((t) => t.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>{t("colDate")}</span><span>{t("colTask")}</span><span style={{marginLeft:"-15px"}}>{t("system")}</span><span style={{marginLeft:"-19px"}}>{t("kind")}</span><span style={{marginLeft:"-23px"}}>{t("status")}</span><span style={{marginLeft:"-27px"}}>{t("priority")}</span><span></span>
+            <span>{t("colDate")}</span><span>{t("colHours")}</span><span>{t("colTask")}</span><span style={{marginLeft:"-15px"}}>{t("system")}</span><span style={{marginLeft:"-19px"}}>{t("kind")}</span><span style={{marginLeft:"-23px"}}>{t("status")}</span><span style={{marginLeft:"-27px"}}>{t("priority")}</span><span></span>
           </div>
           {!loading && filtered.length === 0 && <div className="empty-state"><p>{t("noMaintenanceTasks")}</p></div>}
           {filtered.map((task) => {
@@ -557,9 +555,10 @@ export function MaintenancePage() {
             }
 
             return (
-            <div className="data-table-row" key={task.id} style={{ gridTemplateColumns: "1.5rem 7rem 3fr 1.4fr 6rem 6rem 5.5rem auto", alignItems: "center", background: selectMode && selected.has(task.id) ? "color-mix(in srgb, var(--danger) 6%, transparent)" : undefined }}>
+            <div className="data-table-row" key={task.id} style={{ gridTemplateColumns: "1.5rem 7rem 5rem 3fr 1.4fr 6rem 6rem 5.5rem auto", alignItems: "center", background: selectMode && selected.has(task.id) ? "color-mix(in srgb, var(--danger) 6%, transparent)" : undefined }}>
               <SelectRowCheckbox selectMode={selectMode} id={task.id} selected={selected} onToggle={toggleOne} disabled={deleting} />
               <span style={{ fontSize: "0.82rem", ...dateStyle }}>{dateLabel}</span>
+              <span className="data-table-cell-muted" style={{ fontSize: "0.82rem" }}>{task.engineHours != null ? `${task.engineHours} h` : "—"}</span>
               <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</span>

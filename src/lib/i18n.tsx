@@ -507,6 +507,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     colPricePerUnit: "Precio/u",
     colPlace: "Lugar",
     colHours: "Horas",
+    colTank: "Tanque",
+    selectTank: "Seleccionar tanque",
+    noTankSelected: "Sin tanque específico",
     // Dashboard strings
     dashOverduePreventive: "periodicos vencidos",
     dashLowStock: "stock bajo minimo",
@@ -1079,6 +1082,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     colPricePerUnit: "Price/u",
     colPlace: "Place",
     colHours: "Hours",
+    colTank: "Tank",
+    selectTank: "Select tank",
+    noTankSelected: "No specific tank",
     // Dashboard strings
     dashOverduePreventive: "overdue periodics",
     dashLowStock: "low stock",

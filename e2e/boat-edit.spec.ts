@@ -1,12 +1,12 @@
 /**
- * E2E: Edit all boat data sections for REWIND (owner_admin role)
+ * E2E: Edit all boat data sections for ENJOY (owner_admin role)
  * Covers: General info, Identificadores, Dimensiones (5 subtabs), Tanques
  */
 import { test, expect, type Page } from "@playwright/test";
 
 const EMAIL = "jdiazrv@me.com";
 const PASSWORD = "maxfile";
-const BOAT_NAME = "REWIND";
+const BOAT_NAME = "ENJOY";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ async function selectByLabel(page: Page, labelText: string, value: string) {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-test.describe("Boat data editing — REWIND", () => {
+test.describe("Boat data editing — ENJOY", () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
     await openBoatDetail(page, BOAT_NAME);
@@ -107,7 +107,7 @@ test.describe("Boat data editing — REWIND", () => {
   // ── 2. General — identificadores internacionales ──────────────────────────
   test("2. General — editar identificadores internacionales", async ({ page }) => {
     await openTab(page, "General");
-    await openModal(page, "Editar");
+    await openModal(page, "Editar identificadores internacionales");
 
     await fillByLabel(page, "MMSI", "224123456");
     await fillByLabel(page, "Indicativo", "EA3RDW");
@@ -205,11 +205,10 @@ test.describe("Boat data editing — REWIND", () => {
     console.log("✓ Dimensiones Velas OK");
   });
 
-  // ── 7. Dimensiones — subtab Polares ──────────────────────────────────────
-  test("7. Dimensiones — subtab Polares", async ({ page }) => {
-    await openTab(page, "Dimensiones");
-    await openModal(page, "Editar dimensiones");
-    await switchModalTab(page, "Polares");
+  // ── 7. Polares — tab propio ──────────────────────────────────────────────
+  test("7. Polares — tab propio y edición", async ({ page }) => {
+    await openTab(page, "Polares");
+    await openModal(page, "Editar polares");
 
     await page.locator(".modal-box label").filter({ hasText: /Velocidades de viento/i })
       .locator("input").fill("6,8,10,12,14,16,20");
@@ -241,11 +240,13 @@ test.describe("Boat data editing — REWIND", () => {
     await openTab(page, "Tanques");
     await openModal(page, "Editar tanques");
 
-    // Edit first existing tank's capacity (input[type=number] inside first card)
+    // Edit first existing tank's capacity if there is one.
     const firstCard = page.locator(".modal-box .boat-detail-section").first();
     const firstCapacity = firstCard.locator('input[type="number"]').first();
-    await firstCapacity.clear();
-    await firstCapacity.fill("270");
+    if (await firstCapacity.count()) {
+      await firstCapacity.clear();
+      await firstCapacity.fill("270");
+    }
 
     // Add a new tank
     await page.locator(".modal-box button").filter({ hasText: "+ Añadir tanque" }).click();

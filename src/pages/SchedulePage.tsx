@@ -183,7 +183,7 @@ function TemplatePicker({
   onPick: (t: MaintenanceTemplate) => void;
   onCancel: () => void;
 }) {
-  const { locale } = useI18n();
+  const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
   const [systemFilter, setSystemFilter] = useState("");
 

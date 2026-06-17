@@ -582,15 +582,13 @@ export function AdminMaintenanceTemplatesPage() {
           {activeBoatId && (
             <span className="pill">{scheduleMap.size} en seguimiento</span>
           )}
-          {isSuperuser && (
-            <button
-              className="btn-primary"
-              onClick={() => { setEditingTemplate(null); setModal("create-global"); }}
-              type="button"
-            >
-              + {t("newMaintenanceTemplate")}
-            </button>
-          )}
+          <button
+            className="btn-primary"
+            onClick={() => { setEditingTemplate(null); setModal("create-global"); }}
+            type="button"
+          >
+            + {t("newMaintenanceTemplate")}
+          </button>
         </div>
       </div>
 
@@ -701,15 +699,13 @@ export function AdminMaintenanceTemplatesPage() {
                       ✏
                     </button>
                   )}
-                  {isSuperuser && (
-                    <button
-                      className="btn-icon" type="button"
-                      onClick={() => { setEditingTemplate(tpl); setModal("edit-global"); }}
-                      title={t("edit") + " (global)"}
-                    >
-                      ⚙
-                    </button>
-                  )}
+                  <button
+                    className="btn-icon" type="button"
+                    onClick={() => { setEditingTemplate(tpl); setModal("edit-global"); }}
+                    title={t("edit")}
+                  >
+                    ⚙
+                  </button>
                 </div>
               </div>
             );

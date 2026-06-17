@@ -302,6 +302,7 @@ export async function loadAppData(): Promise<AppData> {
         doneDate: null,
         responsible: row.responsible,
         performedBy: row.performed_by,
+        location: null,
         engineHours: null,
         cost: null,
         notes: null,

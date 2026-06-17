@@ -14,10 +14,11 @@ import { useAppData } from "../providers/AppDataProvider";
 const FUEL_TYPES = ["Diesel", "Gasoline", "LPG", "Electric", "Other"];
 
 function FuelLogForm({
-  initial, boatName, onSave, onDelete, onCancel, loading, error,
+  initial, boatName, tanks, onSave, onDelete, onCancel, loading, error,
 }: {
   initial: Omit<FuelLog, "id" | "boatName">;
   boatName: string;
+  tanks: { id: string; label: string }[];
   onSave: (d: Omit<FuelLog, "id" | "boatName">) => void;
   onDelete?: () => void;
   onCancel: () => void;
@@ -39,6 +40,10 @@ function FuelLogForm({
           <InputField label={t("colDate")} type="date" required value={form.fuelledAt} onChange={(e) => set("fuelledAt", e.target.value)} />
           <SelectField label={t("fuelType")} value={form.fuelType} onChange={(e) => set("fuelType", e.target.value)}>
             {FUEL_TYPES.map((f) => <option key={f} value={f}>{f}</option>)}
+          </SelectField>
+          <SelectField label={t("colTank")} value={form.tankId ?? ""} onChange={(e) => set("tankId", e.target.value || null)}>
+            <option value="">{t("noTankSelected")}</option>
+            {tanks.map((tk) => <option key={tk.id} value={tk.id}>{tk.label}</option>)}
           </SelectField>
           <InputField label={t("colQuantity")} type="number" required value={form.quantity} onChange={(e) => set("quantity", Number(e.target.value))} />
           <SelectField label={t("unit")} value={form.unit} onChange={(e) => set("unit", e.target.value)}>
@@ -63,7 +68,7 @@ function FuelLogForm({
 
 export function FuelPage() {
   const { t } = useI18n();
-  const { fuelLogs, refresh, loading } = useAppData();
+  const { fuelLogs, refresh, loading, allBoats } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<FuelLog | null>(null);
@@ -74,15 +79,39 @@ export function FuelPage() {
 
   const boatName = activeBoat ? activeBoat.name : "Sin barco activo";
 
-  const filtered = fuelLogs.filter((l) => !activeBoatId || l.boatId === activeBoatId);
+  const boatTanks = (allBoats.find((b) => b.id === activeBoatId)?.tanks ?? []).map((tk) => ({
+    id: tk.id,
+    label: tk.label,
+  }));
+
+  const filtered = fuelLogs
+    .filter((l) => !activeBoatId || l.boatId === activeBoatId)
+    .sort((a, b) => a.fuelledAt.localeCompare(b.fuelledAt));
   const totalLiters = filtered.reduce((sum, l) => sum + l.quantity, 0);
   const totalCost = filtered.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
+
+  // Consumo entre repostajes: litros del repostaje anterior / horas entre ambos
+  function getConsumption(index: number): string | null {
+    if (index === 0) return null;
+    const prev = filtered[index - 1];
+    const curr = filtered[index];
+    if (prev.engineHoursAtFuelling == null || curr.engineHoursAtFuelling == null) return null;
+    const deltaH = curr.engineHoursAtFuelling - prev.engineHoursAtFuelling;
+    if (deltaH <= 0) return null;
+    const lph = prev.quantity / deltaH;
+    return `${lph.toFixed(1)} L/h`;
+  }
+
+  function getTankLabel(tankId: string | null): string {
+    if (!tankId) return "-";
+    return boatTanks.find((tk) => tk.id === tankId)?.label ?? tankId;
+  }
 
   const EMPTY: Omit<FuelLog, "id" | "boatName"> = {
     boatId: activeBoatId ?? "", fuelledAt: new Date().toISOString().slice(0, 10),
     fuelType: "Diesel", quantity: 0, unit: "L",
     pricePerUnit: null, totalCost: null, supplier: null,
-    location: null, engineHoursAtFuelling: null, notes: null,
+    location: null, engineHoursAtFuelling: null, tankId: null, notes: null,
   };
 
   function openCreate() { setEditing(null); setError(null); setModal("create"); }
@@ -167,20 +196,30 @@ export function FuelPage() {
       <article className="panel-card">
         {loading && <LoadingOverlay />}
         <div className="data-table">
-          <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 1fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr auto" }}>
+          <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 1fr 0.8fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((l) => l.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>{t("colDate")}</span><span>{t("colType")}</span><span>{t("colQuantity")}</span><span>{t("colPricePerUnit")}</span><span>{t("colPlace")}</span><span>{t("colHours")}</span><span></span>
+            <span>{t("colDate")}</span>
+            <span>{t("colType")}</span>
+            <span>{t("colTank")}</span>
+            <span>{t("colQuantity")}</span>
+            <span>{t("colPricePerUnit")}</span>
+            <span>{t("colPlace")}</span>
+            <span>{t("colHours")}</span>
+            <span>Consumo</span>
+            <span></span>
           </div>
           {!loading && filtered.length === 0 && <div className="empty-state"><p>No hay repostajes registrados.</p></div>}
-          {filtered.map((l) => (
-            <div className="data-table-row" key={l.id} style={{ gridTemplateColumns: "1.5rem 1fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr auto" }}>
+          {filtered.map((l, i) => (
+            <div className="data-table-row" key={l.id} style={{ gridTemplateColumns: "1.5rem 1fr 0.8fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr auto" }}>
               <SelectRowCheckbox selectMode={selectMode} id={l.id} selected={selected} onToggle={toggleOne} disabled={deleting} />
-              <span className="data-table-cell-muted">{l.fuelledAt}</span>
+              <span className="data-table-cell-muted">{l.fuelledAt.slice(0, 10)}</span>
               <span><span className="pill">{l.fuelType}</span></span>
+              <span className="data-table-cell-muted">{getTankLabel(l.tankId)}</span>
               <strong>{l.quantity} {l.unit}</strong>
               <span className="data-table-cell-muted">{l.pricePerUnit != null ? `${l.pricePerUnit}` : "-"}</span>
               <span className="data-table-cell-muted">{l.location ?? l.supplier ?? "-"}</span>
               <span className="data-table-cell-muted">{l.engineHoursAtFuelling != null ? `${l.engineHoursAtFuelling} h` : "-"}</span>
+              <span className="data-table-cell-muted">{getConsumption(i) ?? "-"}</span>
               <div className="row-actions">
                 {isSupabaseConfigured && (
                   <button className="btn-icon" onClick={() => openEdit(l)} type="button" title="Editar">✏</button>
@@ -200,10 +239,11 @@ export function FuelPage() {
               ? { boatId: editing.boatId, fuelledAt: editing.fuelledAt, fuelType: editing.fuelType,
                   quantity: editing.quantity, unit: editing.unit, pricePerUnit: editing.pricePerUnit,
                   totalCost: editing.totalCost, supplier: editing.supplier,
-                  location: editing.location,
-                  engineHoursAtFuelling: editing.engineHoursAtFuelling, notes: editing.notes }
+                  location: editing.location, engineHoursAtFuelling: editing.engineHoursAtFuelling,
+                  tankId: editing.tankId, notes: editing.notes }
               : EMPTY}
             boatName={boatName}
+            tanks={boatTanks}
             onSave={handleSave} onDelete={editing ? handleDelete : undefined}
             onCancel={closeModal} loading={saving} error={error}
           />

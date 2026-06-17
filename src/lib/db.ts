@@ -1853,7 +1853,7 @@ export async function fetchHourLogs(boatScope?: string | string[]): Promise<Hour
   let q = db()
     .from("engine_hour_logs")
     .select(
-      `id, boat_id, hour_counter_id, logged_at, value_hours, notes,
+      `id, boat_id, hour_counter_id, logged_at, value_hours, location, notes,
        boats ( name ),
        hour_counters ( name )`
     )
@@ -1869,6 +1869,7 @@ export async function fetchHourLogs(boatScope?: string | string[]): Promise<Hour
     counterName: r.hour_counters?.name ?? "",
     loggedAt: r.logged_at,
     hours: Number(r.value_hours ?? 0),
+    location: r.location ?? null,
     notes: r.notes,
     loggedBy: null,
   }));
@@ -1880,6 +1881,7 @@ export async function createHourLog(payload: Omit<HourLog, "id" | "boatName" | "
     hour_counter_id: payload.hourCounterId,
     logged_at: payload.loggedAt,
     value_hours: payload.hours,
+    location: payload.location ?? null,
     notes: payload.notes,
   });
   if (error) throw error;
@@ -1889,6 +1891,7 @@ export async function updateHourLog(id: string, payload: Partial<Omit<HourLog, "
   const { error } = await db().from("engine_hour_logs").update({
     logged_at: payload.loggedAt,
     value_hours: payload.hours,
+    location: payload.location ?? null,
     notes: payload.notes,
   }).eq("id", id);
   if (error) throw error;
@@ -1905,7 +1908,7 @@ export async function fetchFuelLogs(boatScope?: string | string[]): Promise<Fuel
   let q = db()
     .from("fuel_logs")
     .select(
-      `id, boat_id, logged_at, fuel_type, quantity, unit, cost, supplier, location, engine_hours, notes,
+      `id, boat_id, logged_at, fuel_type, quantity, unit, cost, supplier, location, engine_hours, tank_id, notes,
        boats ( name )`
     )
     .order("logged_at", { ascending: false });
@@ -1925,6 +1928,7 @@ export async function fetchFuelLogs(boatScope?: string | string[]): Promise<Fuel
     supplier: r.supplier,
     location: r.location ?? null,
     engineHoursAtFuelling: r.engine_hours,
+    tankId: r.tank_id ?? null,
     notes: r.notes,
   }));
 }
@@ -1940,6 +1944,7 @@ export async function createFuelLog(payload: Omit<FuelLog, "id" | "boatName">) {
     supplier: payload.supplier,
     location: payload.location,
     engine_hours: payload.engineHoursAtFuelling,
+    tank_id: payload.tankId ?? null,
     notes: payload.notes,
   });
   if (error) throw error;
@@ -1955,6 +1960,7 @@ export async function updateFuelLog(id: string, payload: Partial<Omit<FuelLog, "
     supplier: payload.supplier,
     location: payload.location,
     engine_hours: payload.engineHoursAtFuelling,
+    tank_id: payload.tankId ?? null,
     notes: payload.notes,
   }).eq("id", id);
   if (error) throw error;

@@ -322,7 +322,7 @@ export function HaulOutsPage() {
     templateId: null, boatId: activeBoatId ?? "", boatSystemId: null, boatComponentId: null,
     haulOutId, title: "", description: null, kind: "preventive", status: "pending",
     priority: "medium", dueDate: plannedDate, doneDate: null, responsible: null,
-    performedBy: null, engineHours: null, cost: null, notes: null,
+    performedBy: null, location: null, engineHours: null, cost: null, notes: null,
   });
 
   function openTaskCreate() {
@@ -572,7 +572,8 @@ export function HaulOutsPage() {
                   haulOutId: editingTask.haulOutId, title: editingTask.title, description: editingTask.description,
                   kind: editingTask.kind, status: editingTask.status, priority: editingTask.priority,
                   dueDate: editingTask.dueDate, doneDate: editingTask.doneDate, responsible: editingTask.responsible,
-                  performedBy: editingTask.performedBy, engineHours: editingTask.engineHours,
+                  performedBy: editingTask.performedBy, location: editingTask.location,
+                  engineHours: editingTask.engineHours,
                   cost: editingTask.cost, notes: editingTask.notes }
               : EMPTY_TASK(selectedHaulOut.id, selectedHaulOut.startDate ?? selectedHaulOut.plannedDate)}
             systems={boatSystems}

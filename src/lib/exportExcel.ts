@@ -12,6 +12,7 @@ type ExportExcelData = {
   futureActions: FutureAction[];
   futurePurchases: FuturePurchase[];
   inventoryItems: InventoryItem[];
+  sails?: SailInventoryItem[];
   hourLogs: HourLog[];
   fuelLogs: FuelLog[];
   marinas: Marina[];
@@ -21,6 +22,7 @@ type ExportExcelData = {
 type ExportSectionKey = keyof ExportExcelData;
 type ExportSectionSelection = Partial<Record<ExportSectionKey, boolean>>;
 type Column<T> = { label: string; value: (row: T) => string | number | null | undefined };
+type WorksheetExport = { sheetName: string; xml: string };
 type ZipEntry = {
   name: string;
   data: Uint8Array;
@@ -526,7 +528,7 @@ export async function exportAllToExcel(
   selection?: ExportSectionSelection,
 ) {
   const includes = (key: ExportSectionKey) => selection?.[key] ?? true;
-  const sections = SECTIONS
+  const sections: WorksheetExport[] = SECTIONS
     .filter((section) => includes(section.key))
     .map((section) => ({
       sheetName: section.sheetName,

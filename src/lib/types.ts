@@ -603,6 +603,7 @@ export type HourLog = {
   counterName: string;
   loggedAt: string;
   hours: number;
+  location: string | null;
   notes: string | null;
   loggedBy: string | null;
 };
@@ -622,6 +623,7 @@ export type FuelLog = {
   supplier: string | null;
   location: string | null;
   engineHoursAtFuelling: number | null;
+  tankId: string | null;
   notes: string | null;
 };
 
