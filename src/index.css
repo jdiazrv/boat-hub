@@ -1219,6 +1219,43 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
+.data-table-sort {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+
+.data-table-sort:hover,
+.data-table-sort:focus-visible,
+.data-table-sort.is-active {
+  color: var(--text);
+}
+
+.data-table-sort:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.data-table-sort-arrow {
+  display: inline-flex;
+  justify-content: center;
+  width: 0.8rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
 .data-table-row {
   border-bottom: 1px solid var(--border);
   transition: background 120ms;

@@ -15,6 +15,7 @@ import { useAppData } from "../providers/AppDataProvider";
 const STATUSES = ["pending", "planned", "in_progress", "done", "cancelled", "postponed"] as const;
 const PRIORITIES = ["low", "medium", "high", "critical"] as const;
 const KINDS: MaintenanceKind[] = ["preventive", "corrective", "inspection", "review", "upgrade"];
+type MaintenanceSortKey = "date" | "engineHours" | "title" | "system" | "kind" | "status" | "priority";
 
 function HourCountersSummary({ counters }: { counters: HourCounter[] }) {
   if (!counters.length) return null;
@@ -309,8 +310,8 @@ export function MaintenancePage() {
   const [filterSystem, setFilterSystem] = useState("");
   const [filterScheduled, setFilterScheduled] = useState(false);
   const [filterSearch, setFilterSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"dueDate" | "priority" | "status" | "system">("dueDate");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<MaintenanceSortKey>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [boatSystems, setBoatSystems] = useState<BoatSystem[]>([]);
   const [boatComponents, setBoatComponents] = useState<BoatComponent[]>([]);
   const [hourCounters, setHourCounters] = useState<HourCounter[]>([]);
@@ -326,6 +327,24 @@ export function MaintenancePage() {
 
   const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
   const STATUS_ORDER = { in_progress: 0, pending: 1, planned: 2, postponed: 3, done: 4, cancelled: 5 };
+  const KIND_ORDER: Record<MaintenanceKind, number> = { preventive: 0, corrective: 1, inspection: 2, review: 3, upgrade: 4 };
+
+  function taskDisplayDate(task: MaintenanceTask) {
+    const isDone = task.status === "done" || task.status === "cancelled";
+    return isDone ? task.doneDate ?? task.dueDate : task.dueDate;
+  }
+
+  function compareNullable<T>(
+    a: T | null | undefined,
+    b: T | null | undefined,
+    compare: (left: T, right: T) => number,
+    dir: 1 | -1
+  ) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return compare(a, b) * dir;
+  }
 
   const filtered = useMemo(() => {
     const list = tasks.filter((task) => {
@@ -344,10 +363,14 @@ export function MaintenancePage() {
 
     const dir = sortDir === "asc" ? 1 : -1;
     list.sort((a, b) => {
-      if (sortBy === "dueDate") {
-        const da = a.dueDate ?? "9999-99-99";
-        const db2 = b.dueDate ?? "9999-99-99";
-        return da < db2 ? -dir : da > db2 ? dir : 0;
+      if (sortBy === "date") {
+        return compareNullable(taskDisplayDate(a), taskDisplayDate(b), (left, right) => left.localeCompare(right), dir);
+      }
+      if (sortBy === "engineHours") {
+        return compareNullable(a.engineHours, b.engineHours, (left, right) => left - right, dir);
+      }
+      if (sortBy === "title") {
+        return a.title.localeCompare(b.title, locale, { sensitivity: "base" }) * dir;
       }
       if (sortBy === "priority") {
         return dir * ((PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9));
@@ -355,13 +378,42 @@ export function MaintenancePage() {
       if (sortBy === "status") {
         return dir * ((STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
       }
+      if (sortBy === "kind") {
+        return dir * ((KIND_ORDER[a.kind] ?? 9) - (KIND_ORDER[b.kind] ?? 9));
+      }
       if (sortBy === "system") {
-        return dir * (a.systemName ?? "").localeCompare(b.systemName ?? "");
+        return dir * (a.systemName ?? "").localeCompare(b.systemName ?? "", locale, { sensitivity: "base" });
       }
       return 0;
     });
     return list;
-  }, [tasks, activeBoatId, filterStatus, filterPriority, filterKind, filterSystem, filterScheduled, filterSearch, sortBy, sortDir, today]);
+  }, [tasks, activeBoatId, filterStatus, filterPriority, filterKind, filterSystem, filterScheduled, filterSearch, sortBy, sortDir, today, locale]);
+
+  function handleSort(nextSortBy: MaintenanceSortKey) {
+    if (sortBy === nextSortBy) {
+      setSortDir((current) => current === "asc" ? "desc" : "asc");
+      return;
+    }
+    setSortBy(nextSortBy);
+    setSortDir(nextSortBy === "date" ? "desc" : "asc");
+  }
+
+  function SortHeader({ field, children, style }: { field: MaintenanceSortKey; children: React.ReactNode; style?: React.CSSProperties }) {
+    const isActive = sortBy === field;
+    const arrow = isActive ? (sortDir === "asc" ? "↑" : "↓") : "";
+    return (
+      <button
+        type="button"
+        className={`data-table-sort ${isActive ? "is-active" : ""}`}
+        onClick={() => handleSort(field)}
+        aria-sort={isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+        style={style}
+      >
+        <span>{children}</span>
+        <span className="data-table-sort-arrow" aria-hidden="true">{arrow}</span>
+      </button>
+    );
+  }
 
   useEffect(() => {
     if (!activeBoatId) return;
@@ -508,7 +560,10 @@ export function MaintenancePage() {
           {t("onlyScheduled")}
         </label>
         <select className="form-input form-select" value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} style={{ minWidth: "140px" }}>
-          <option value="dueDate">{t("sortByDate")}</option>
+          <option value="date">{t("sortByDate")}</option>
+          <option value="engineHours">{t("engineHours")}</option>
+          <option value="title">{t("colTask")}</option>
+          <option value="kind">{t("kind")}</option>
           <option value="priority">{t("sortByPriority")}</option>
           <option value="status">{t("sortByStatus")}</option>
           <option value="system">{t("sortBySystem")}</option>
@@ -530,7 +585,14 @@ export function MaintenancePage() {
         <div className="data-table">
           <div className="data-table-head" style={{ gridTemplateColumns: "1.5rem 7rem 5rem 3fr 1.4fr 6rem 6rem 5.5rem auto" }}>
             <SelectAllCheckbox selectMode={selectMode} ids={filtered.map((t) => t.id)} selected={selected} onToggleAll={toggleAll} />
-            <span>{t("colDate")}</span><span>{t("colHours")}</span><span>{t("colTask")}</span><span style={{marginLeft:"-15px"}}>{t("system")}</span><span style={{marginLeft:"-19px"}}>{t("kind")}</span><span style={{marginLeft:"-23px"}}>{t("status")}</span><span style={{marginLeft:"-27px"}}>{t("priority")}</span><span></span>
+            <SortHeader field="date">{t("colDate")}</SortHeader>
+            <SortHeader field="engineHours">{t("colHours")}</SortHeader>
+            <SortHeader field="title">{t("colTask")}</SortHeader>
+            <SortHeader field="system" style={{ marginLeft: "-15px" }}>{t("system")}</SortHeader>
+            <SortHeader field="kind" style={{ marginLeft: "-19px" }}>{t("kind")}</SortHeader>
+            <SortHeader field="status" style={{ marginLeft: "-23px" }}>{t("status")}</SortHeader>
+            <SortHeader field="priority" style={{ marginLeft: "-27px" }}>{t("priority")}</SortHeader>
+            <span></span>
           </div>
           {!loading && filtered.length === 0 && <div className="empty-state"><p>{t("noMaintenanceTasks")}</p></div>}
           {filtered.map((task) => {
