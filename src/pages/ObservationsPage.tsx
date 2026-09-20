@@ -1,3 +1,4 @@
+import { useSystemName } from "../lib/useSystemName";
 import { useEffect, useState } from "react";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import * as db from "../lib/db";
@@ -62,6 +63,7 @@ function ObservationForm({
 }
 
 export function ObservationsPage() {
+  const sysLabel = useSystemName();
   const { t, locale } = useI18n();
   const { observations, refresh, loading } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
@@ -181,7 +183,7 @@ export function ObservationsPage() {
                 <strong style={{ display: "block" }}>{o.title}</strong>
                 {o.observedAt && <span className="data-table-cell-muted">{o.observedAt}</span>}
               </div>
-              <span className="data-table-cell-muted">{o.systemName}</span>
+              <span className="data-table-cell-muted">{sysLabel(o.systemName)}</span>
               <span><span className={`pill ${o.priority}`}>{t(o.priority)}</span></span>
               <span><span className={`pill ${o.status}`}>{t(o.status)}</span></span>
               <div className="row-actions">

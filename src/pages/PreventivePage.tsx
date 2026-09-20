@@ -1,3 +1,4 @@
+import { todayLocalISO } from "../lib/dates";
 import { useEffect, useState } from "react";
 import * as db from "../lib/db";
 import type { BoatScheduleEntry, HourCounter } from "../lib/types";
@@ -34,7 +35,7 @@ function MarkDoneModal({
   onCancel: () => void;
 }) {
   const { locale } = useI18n();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISO();
   const [form, setForm] = useState<DoneForm>({
     doneAt: entry.lastDoneAt ?? today,
     engineHours: entry.lastDoneEngineHours != null ? String(entry.lastDoneEngineHours) : "",
@@ -126,14 +127,16 @@ export function PreventivePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<"" | "overdue" | "due_soon" | "ok">("");
   const [filterCategory, setFilterCategory] = useState<string>("");
   const [markingEntry, setMarkingEntry] = useState<BoatScheduleEntry | null>(null);
   const [hourCounters, setHourCounters] = useState<HourCounter[]>([]);
 
   async function refresh() {
-    if (!activeBoatId) return;
+    if (!activeBoatId || !isSupabaseConfigured) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const [nextSchedule, counters] = await Promise.all([
         db.fetchBoatSchedule(activeBoatId),
@@ -141,7 +144,10 @@ export function PreventivePage() {
       ]);
       setSchedule(nextSchedule);
       setHourCounters(counters);
-    } catch { /* ignore */ }
+    } catch (e) {
+      console.error("Could not load the maintenance schedule", e);
+      setLoadError(e instanceof Error ? e.message : "No se pudo cargar el plan periódico");
+    }
     finally { setLoading(false); }
   }
 
@@ -240,6 +246,13 @@ export function PreventivePage() {
           <h2>{t("preventiveBoard")}</h2>
         </div>
       </div>
+
+      {loadError && (
+        <div className="banner warning-banner" role="alert">
+          <strong>No se pudo cargar el plan periódico</strong>
+          <span>{loadError}</span>
+        </div>
+      )}
 
       <div className="filter-bar">
         <select

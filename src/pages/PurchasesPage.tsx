@@ -1,3 +1,4 @@
+import { useSystemName } from "../lib/useSystemName";
 import { useEffect, useState } from "react";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import * as db from "../lib/db";
@@ -65,6 +66,7 @@ function PurchaseForm({
 }
 
 export function PurchasesPage() {
+  const sysLabel = useSystemName();
   const { t, locale } = useI18n();
   const { futurePurchases, refresh, loading } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
@@ -177,7 +179,7 @@ export function PurchasesPage() {
                 <strong style={{ display: "block" }}>{p.articleName}</strong>
                 {p.targetDate && <span className="data-table-cell-muted">{p.targetDate}</span>}
               </div>
-              <span className="data-table-cell-muted">{p.systemName}</span>
+              <span className="data-table-cell-muted">{sysLabel(p.systemName)}</span>
               <span className="data-table-cell-muted">{p.quantity != null ? `${p.quantity} ${p.unit ?? ""}` : "-"}</span>
               <span><span className={`pill ${p.priority}`}>{t(p.priority)}</span></span>
               <span><span className={`pill ${p.status}`}>{t(p.status)}</span></span>

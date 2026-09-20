@@ -1,3 +1,4 @@
+import { useSystemName } from "../lib/useSystemName";
 import { useEffect, useMemo, useState } from "react";
 import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowCheckbox, BulkDeleteBar } from "../components/SelectModeBar";
 import { LoadingOverlay } from "../components/LoadingOverlay";
@@ -312,6 +313,7 @@ function InventoryForm({
 }
 
 export function InventoryPage() {
+  const sysLabel = useSystemName();
   const { t, locale } = useI18n();
   const CATEGORIES = useInventoryCategories();
   const STATUSES = useInventoryStatuses();
@@ -540,7 +542,7 @@ export function InventoryPage() {
                   )}
                   {item.reference && <span className="data-table-cell-muted"> · Ref: {item.reference}</span>}
                 </div>
-                <span className="data-table-cell-muted">{item.systemName}</span>
+                <span className="data-table-cell-muted">{sysLabel(item.systemName)}</span>
                 <span><span className="pill">{CATEGORIES.find((c) => c.value === item.category)?.label ?? item.category}</span></span>
                 <span className={isLow ? "stock-alert" : ""}>
                   {item.category === "spare_part" || item.category === "consumable"

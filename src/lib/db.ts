@@ -1,3 +1,4 @@
+import { parseLocalDate, startOfToday } from "./dates";
 import { supabase } from "./supabase";
 import type {
   Boat,
@@ -1148,12 +1149,11 @@ function mapScheduleRow(r: any): BoatScheduleEntry {
   const sc = Array.isArray(mt?.system_catalog)
     ? mt.system_catalog[0]
     : mt?.system_catalog;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = startOfToday();
   const soonMs = 30 * 24 * 60 * 60 * 1000;
   let state: BoatScheduleEntry["state"] = "ok";
   if (r.next_due_date) {
-    const due = new Date(r.next_due_date);
+    const due = parseLocalDate(r.next_due_date);
     if (due < today) state = "overdue";
     else if (due.getTime() - today.getTime() <= soonMs) state = "due_soon";
   }

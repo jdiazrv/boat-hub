@@ -1,14 +1,15 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import * as db from "../lib/db";
+import { formatDisplayDate } from "../lib/dates";
+import type { BoatScheduleEntry } from "../lib/types";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { useAppData } from "../providers/AppDataProvider";
 import { useActiveBoat } from "../providers/ActiveBoatProvider";
 
 function fmt(dateStr: string | null | undefined): string {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+  return formatDisplayDate(dateStr, "es");
 }
 
 function priorityColor(priority: string): string {
@@ -19,7 +20,7 @@ function priorityColor(priority: string): string {
 }
 
 export function DashboardPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const {
     boats, allBoats,
     inventoryItems, inventoryItemsFull,
@@ -30,6 +31,22 @@ export function DashboardPage() {
     error,
   } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
+
+  const [schedule, setSchedule] = useState<BoatScheduleEntry[] | null>(null);
+  useEffect(() => {
+    if (!isSupabaseConfigured || !activeBoatId) {
+      setSchedule(null);
+      return;
+    }
+    let cancelled = false;
+    db.fetchBoatSchedule(activeBoatId)
+      .then((rows) => { if (!cancelled) setSchedule(rows); })
+      .catch((err) => {
+        console.error("Dashboard: could not load the maintenance schedule", err);
+        if (!cancelled) setSchedule(null);
+      });
+    return () => { cancelled = true; };
+  }, [activeBoatId]);
 
   const allBoatsList   = isSupabaseConfigured ? allBoats : boats;
   const allMaintenance = isSupabaseConfigured ? maintenanceTasksFull : maintenanceTasks;
@@ -51,7 +68,20 @@ export function DashboardPage() {
 
   // Pending tasks (not done/cancelled)
   const pendingTasks   = myMaintenance.filter((t) => t.status !== "done" && t.status !== "cancelled");
-  const overduePerio   = myPreventive.filter((t) => t.state === "overdue");
+  // Periodic maintenance comes from boat_maintenance_schedule (the same source as
+  // the Periodicos page); the legacy preventive_plans table is only a fallback.
+  const overduePerio = schedule
+    ? schedule
+        .filter((e) => e.state === "overdue")
+        .map((e) => ({
+          id: e.id,
+          title:
+            (locale === "es"
+              ? e.template.titleEs || e.template.titleEn || e.template.title
+              : e.template.titleEn || e.template.titleEs || e.template.title) ?? "",
+          nextDueDate: e.nextDueDate,
+        }))
+    : myPreventive.filter((t) => t.state === "overdue");
   const openObs        = myObservations.filter((o) => o.status === "open");
   const lowStock       = myInventory.filter((i) => i.stock != null && i.minimumStock != null && i.stock < i.minimumStock);
 
@@ -97,7 +127,7 @@ export function DashboardPage() {
       {/* ── Pills resumen ── */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
         <Link to="/maintenance" className="dash-pill" data-warn={pendingTasks.length > 0 || undefined}>
-          {pendingTasks.length} tareas pendientes
+          {pendingTasks.length} {pendingTasks.length === 1 ? "tarea pendiente" : "tareas pendientes"}
         </Link>
         <Link to="/preventive" className="dash-pill" data-warn={overduePerio.length > 0 || undefined}>
           {overduePerio.length} {t("dashOverduePreventive")}
@@ -192,7 +222,7 @@ export function DashboardPage() {
                   <span style={{ fontSize: "0.82rem" }}>{fmt(task.dueDate)}</span>
                   {task.priority && (
                     <span style={{ display: "block", fontSize: "0.72rem", color: priorityColor(task.priority) }}>
-                      {task.priority}
+                      {t(task.priority as "low" | "medium" | "high" | "critical")}
                     </span>
                   )}
                 </div>

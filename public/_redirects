@@ -1,1 +1,4 @@
-/* /index.html 200
+# Missing static assets must be real 404s, not the SPA shell served as 200
+/assets/*  /404.html  404
+/favicon.ico  /favicon.svg  301
+/*  /index.html  200

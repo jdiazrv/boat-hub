@@ -1,3 +1,5 @@
+import { useSystemName } from "../lib/useSystemName";
+import { todayLocalISO } from "../lib/dates";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowCheckbox, BulkDeleteBar } from "../components/SelectModeBar";
 import { LoadingOverlay } from "../components/LoadingOverlay";
@@ -223,7 +225,7 @@ function TaskForm({
             setForm((p) => ({
               ...p,
               status: newStatus,
-              doneDate: isNowDone ? (p.doneDate ?? new Date().toISOString().slice(0, 10)) : null,
+              doneDate: isNowDone ? (p.doneDate ?? todayLocalISO()) : null,
             }));
           }}>
             {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
@@ -297,6 +299,7 @@ function TaskForm({
 }
 
 export function MaintenancePage() {
+  const sysLabel = useSystemName();
   const { t, locale } = useI18n();
   const { maintenanceTasks, maintenanceTasksFull, haulOuts, refresh, loading } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
@@ -322,7 +325,7 @@ export function MaintenancePage() {
 
   const boatName = activeBoat ? activeBoat.name : "Sin barco activo";
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISO();
   const tasks = isSupabaseConfigured ? maintenanceTasksFull : maintenanceTasks;
 
   const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -633,7 +636,7 @@ export function MaintenancePage() {
                   </span>
                 )}
               </span>
-              <span className="data-table-cell-muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.systemName}</span>
+              <span className="data-table-cell-muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sysLabel(task.systemName)}</span>
               <span className={`pill kind-${task.kind}`}>{t(`kind_${task.kind}`)}</span>
               <span className={`pill ${task.status}`}>{t(task.status)}</span>
               <span className={`pill ${task.priority}`} style={{ visibility: isDone ? "hidden" : "visible" }}>{t(task.priority)}</span>

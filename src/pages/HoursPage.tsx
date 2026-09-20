@@ -1,3 +1,4 @@
+import { todayLocalISO } from "../lib/dates";
 import { useEffect, useState } from "react";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowCheckbox, BulkDeleteBar } from "../components/SelectModeBar";
@@ -101,7 +102,7 @@ export function HoursPage() {
 
   const EMPTY_LOG: Omit<HourLog, "id" | "boatName" | "counterName"> = {
     boatId: activeBoatId ?? "", hourCounterId: "",
-    loggedAt: new Date().toISOString().slice(0, 10),
+    loggedAt: todayLocalISO(),
     hours: lastHours ?? 0, location: null, notes: null, loggedBy: null,
   };
 

@@ -74,22 +74,36 @@ export function LocationSearch({
 
   useEffect(() => { setQuery(value ?? ""); }, [value]);
 
+  // Nominatim's usage policy allows at most 1 request/second and discourages
+  // as-you-type search, so the debounce is generous and stale requests are aborted
+  // (otherwise a slow early response could overwrite the results of a newer query).
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
-    if (query.length < 3) { setResults([]); return; }
+    if (query.trim().length < 4) { setResults([]); return; }
+    const controller = new AbortController();
     timer.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res  = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1`,
-          { headers: { "Accept-Language": "es,en" } },
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query.trim())}&format=json&limit=6&addressdetails=1`,
+          { headers: { "Accept-Language": "es,en" }, signal: controller.signal },
         );
+        if (!res.ok) throw new Error(`Nominatim responded ${res.status}`);
         const data: NominatimResult[] = await res.json();
         setResults(data);
         setOpen(true);
-      } catch { setResults([]); }
-      finally { setLoading(false); }
-    }, 500);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        console.warn("Location search failed", err);
+        setResults([]);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 900);
+    return () => {
+      controller.abort();
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, [query]);
 
   useEffect(() => {
@@ -158,22 +172,36 @@ export function LocationSearchWithMap({
     else setCoords(null);
   }, [latitude, longitude]);
 
+  // Nominatim's usage policy allows at most 1 request/second and discourages
+  // as-you-type search, so the debounce is generous and stale requests are aborted
+  // (otherwise a slow early response could overwrite the results of a newer query).
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
-    if (query.length < 3) { setResults([]); return; }
+    if (query.trim().length < 4) { setResults([]); return; }
+    const controller = new AbortController();
     timer.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res  = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1`,
-          { headers: { "Accept-Language": "es,en" } },
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query.trim())}&format=json&limit=6&addressdetails=1`,
+          { headers: { "Accept-Language": "es,en" }, signal: controller.signal },
         );
+        if (!res.ok) throw new Error(`Nominatim responded ${res.status}`);
         const data: NominatimResult[] = await res.json();
         setResults(data);
         setOpen(true);
-      } catch { setResults([]); }
-      finally { setLoading(false); }
-    }, 500);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        console.warn("Location search failed", err);
+        setResults([]);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 900);
+    return () => {
+      controller.abort();
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, [query]);
 
   useEffect(() => {

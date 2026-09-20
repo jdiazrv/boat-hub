@@ -1,3 +1,4 @@
+import { useSystemName } from "../lib/useSystemName";
 import { useEffect, useState } from "react";
 import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowCheckbox, BulkDeleteBar } from "../components/SelectModeBar";
 import * as db from "../lib/db";
@@ -202,6 +203,7 @@ function HaulOutTaskForm({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function HaulOutsPage() {
+  const sysLabel = useSystemName();
   const { t, locale } = useI18n();
   const { haulOuts, shipyards, refresh, loading } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
@@ -482,7 +484,7 @@ export function HaulOutsPage() {
                       {task.hasPhoto && <span title="Tiene fotos" style={{ fontSize: "0.7rem" }}>🖼</span>}
                       {task.hasFile && <span title="Tiene archivos" style={{ fontSize: "0.7rem" }}>📎</span>}
                     </span>
-                    {task.systemName && <span className="data-table-cell-muted" style={{ fontSize: "0.75rem" }}>{task.systemName}</span>}
+                    {task.systemName && <span className="data-table-cell-muted" style={{ fontSize: "0.75rem" }}>{sysLabel(task.systemName)}</span>}
                   </div>
                   <span><span className={`pill kind-${task.kind}`}>{t(`kind_${task.kind}`)}</span></span>
                   <span><span className={`pill ${task.priority}`}>{t(task.priority)}</span></span>

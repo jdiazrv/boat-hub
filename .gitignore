@@ -31,3 +31,6 @@ playwright-report/
 # Logs
 *.log
 npm-debug.log*
+
+# Supabase CLI local state (project ref, pooler URL)
+supabase/.temp/

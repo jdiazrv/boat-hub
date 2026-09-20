@@ -1,3 +1,4 @@
+import { todayLocalISO } from "../lib/dates";
 import { useState } from "react";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowCheckbox, BulkDeleteBar } from "../components/SelectModeBar";
@@ -88,18 +89,41 @@ export function FuelPage() {
     .filter((l) => !activeBoatId || l.boatId === activeBoatId)
     .sort((a, b) => a.fuelledAt.localeCompare(b.fuelledAt));
   const totalLiters = filtered.reduce((sum, l) => sum + l.quantity, 0);
-  const totalCost = filtered.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
+  const pricedLogs = filtered.filter((l) => l.totalCost != null);
+  const totalCost = pricedLogs.reduce((sum, l) => sum + (l.totalCost ?? 0), 0);
 
-  // Consumo entre repostajes: litros del repostaje anterior / horas entre ambos
+  // Consumo full-to-full: los litros repuestos en un repostaje son lo consumido desde el
+  // anterior. Los repostajes hechos con las mismas horas de motor se suman como un grupo
+  // y el resultado se muestra en el último de ellos. Es una estimación: solo es exacta
+  // si los repostajes llenan el depósito.
+  const consumptionByIndex = new Map<number, string>();
+  {
+    let prevHours: number | null = null;
+    let groupHours: number | null = null;
+    let groupQty = 0;
+    let groupLastIndex = -1;
+    const flush = () => {
+      if (groupHours == null) return;
+      if (prevHours != null && groupHours > prevHours) {
+        consumptionByIndex.set(groupLastIndex, `${(groupQty / (groupHours - prevHours)).toFixed(1)} L/h`);
+      }
+      prevHours = groupHours;
+    };
+    filtered.forEach((log, i) => {
+      const h = log.engineHoursAtFuelling;
+      if (h == null) return;
+      if (groupHours !== null && h !== groupHours) {
+        flush();
+        groupQty = 0;
+      }
+      groupHours = h;
+      groupQty += log.quantity;
+      groupLastIndex = i;
+    });
+    flush();
+  }
   function getConsumption(index: number): string | null {
-    if (index === 0) return null;
-    const prev = filtered[index - 1];
-    const curr = filtered[index];
-    if (prev.engineHoursAtFuelling == null || curr.engineHoursAtFuelling == null) return null;
-    const deltaH = curr.engineHoursAtFuelling - prev.engineHoursAtFuelling;
-    if (deltaH <= 0) return null;
-    const lph = prev.quantity / deltaH;
-    return `${lph.toFixed(1)} L/h`;
+    return consumptionByIndex.get(index) ?? null;
   }
 
   function getTankLabel(tankId: string | null): string {
@@ -108,7 +132,7 @@ export function FuelPage() {
   }
 
   const EMPTY: Omit<FuelLog, "id" | "boatName"> = {
-    boatId: activeBoatId ?? "", fuelledAt: new Date().toISOString().slice(0, 10),
+    boatId: activeBoatId ?? "", fuelledAt: todayLocalISO(),
     fuelType: "Diesel", quantity: 0, unit: "L",
     pricePerUnit: null, totalCost: null, supplier: null,
     location: null, engineHoursAtFuelling: null, tankId: null, notes: null,
@@ -184,7 +208,9 @@ export function FuelPage() {
           </div>
           <div className="metric-card">
             <strong>{totalCost.toFixed(0)} €</strong>
-            <span className="data-table-cell-muted">Coste total</span>
+            <span className="data-table-cell-muted">
+              Coste total{pricedLogs.length < filtered.length ? ` (${pricedLogs.length} de ${filtered.length} con precio)` : ""}
+            </span>
           </div>
           <div className="metric-card">
             <strong>{filtered.length}</strong>

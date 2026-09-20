@@ -1,3 +1,4 @@
+import { todayLocalISO } from "./dates";
 import type {
   Boat,
   MaintenanceTask, HaulOut, Observation, FutureAction, FuturePurchase,
@@ -567,7 +568,7 @@ export async function exportAllToExcel(
     includeDrawing,
   ));
   const blob = new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const date = new Date().toISOString().slice(0, 10);
+  const date = todayLocalISO();
   const safeName = boatName.replace(/[^a-zA-Z0-9_\-]/g, "_");
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -576,5 +577,6 @@ export async function exportAllToExcel(
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Revoke later: Safari can cancel the download if the URL disappears immediately.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }

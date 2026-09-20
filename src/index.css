@@ -2025,6 +2025,37 @@ html[data-theme="niebla"] .form-select {
     padding: 1.2rem;
   }
 
+  /* The rule above resets the top padding that keeps the fixed hamburger button
+     (mobile-nav-toggle) from covering the page title. */
+  .content-panel {
+    padding-top: 4rem;
+  }
+
+  /* Periodic-maintenance rows: stack info / dates / actions instead of squeezing the
+     title column to a few pixels and overflowing the viewport. */
+  .schedule-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .schedule-row-title {
+    white-space: normal;
+  }
+
+  .schedule-row-meta {
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+  }
+
+  .schedule-meta-item {
+    align-items: flex-start;
+  }
+
+  .schedule-row-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
   .split-fields,
   .user-card-head,
   .form-grid {
@@ -2034,6 +2065,25 @@ html[data-theme="niebla"] .form-select {
   .table-head,
   .table-row {
     grid-template-columns: 1fr;
+  }
+
+  /* Data tables use inline fixed-width grid columns (~40rem), which pushed the task
+     title off-screen behind a horizontal scroll. On phones, let the cells wrap so
+     every value stays visible; the column headers are redundant once rows wrap. */
+  .data-table-head {
+    display: none;
+  }
+
+  .data-table-row {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.75rem;
+  }
+
+  .data-table-row > * {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .form-actions {

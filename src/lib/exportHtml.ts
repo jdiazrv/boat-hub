@@ -1,3 +1,4 @@
+import { todayLocalISO } from "./dates";
 import type {
   Boat,
   FuelLog,
@@ -468,9 +469,10 @@ export function exportAllToHtml(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${safeFileName(boatName)}_${new Date().toISOString().slice(0, 10)}.html`;
+  a.download = `${safeFileName(boatName)}_${todayLocalISO()}.html`;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Revoke later: Safari can cancel the download if the URL disappears immediately.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }

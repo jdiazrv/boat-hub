@@ -3,11 +3,17 @@ import { OrcDiagram } from "./OrcDiagram";
 import { useI18n } from "../lib/i18n";
 
 function Row({ label, value, unit }: { label: string; value: React.ReactNode; unit?: string }) {
+  const { locale } = useI18n();
   if (value === null || value === undefined || value === "") return null;
+  // Numbers use the locale's separators (14,265 m / 14.213 kg in Spanish) so decimals and
+  // thousands are never mixed within the same table.
+  const shown = typeof value === "number"
+    ? value.toLocaleString(locale === "es" ? "es-ES" : "en-GB", { maximumFractionDigits: 3 })
+    : value;
   return (
     <div className="boat-detail-row">
       <span className="boat-detail-label">{label}</span>
-      <span className="boat-detail-value">{value}{unit ? <span style={{ opacity: 0.6, fontSize: "0.85em", marginLeft: 2 }}>{unit}</span> : null}</span>
+      <span className="boat-detail-value">{shown}{unit ? <span style={{ opacity: 0.6, fontSize: "0.85em", marginLeft: "0.25em" }}>{unit}</span> : null}</span>
     </div>
   );
 }
@@ -76,7 +82,7 @@ export function BoatTabDimensions({ dims, canEdit, onEdit }: {
         <Row label={t("fieldLOA")} value={safeDims.loa} unit="m" />
         <Row label={t("fieldMaxBeam")} value={safeDims.maxBeam} unit="m" />
         <Row label={t("fieldDraft")} value={safeDims.draft} unit="m" />
-        <Row label={t("fieldDisplacement")} value={safeDims.displacement != null ? safeDims.displacement.toLocaleString("es") : null} unit="kg" />
+        <Row label={t("fieldDisplacement")} value={safeDims.displacement} unit="kg" />
       </Section>
 
       {/* ── Propeller ─────────────────────────────────────────────────── */}

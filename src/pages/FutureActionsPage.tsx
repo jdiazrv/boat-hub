@@ -1,3 +1,4 @@
+import { useSystemName } from "../lib/useSystemName";
 import { useEffect, useState } from "react";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import * as db from "../lib/db";
@@ -66,6 +67,7 @@ function FutureActionForm({
 }
 
 export function FutureActionsPage() {
+  const sysLabel = useSystemName();
   const { t, locale } = useI18n();
   const { futureActions, refresh, loading } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
@@ -186,7 +188,7 @@ export function FutureActionsPage() {
                 <strong style={{ display: "block" }}>{a.title}</strong>
                 {a.targetDate && <span className="data-table-cell-muted">{a.targetDate}</span>}
               </div>
-              <span className="data-table-cell-muted">{a.systemName}</span>
+              <span className="data-table-cell-muted">{sysLabel(a.systemName)}</span>
               <span><span className={`pill kind-${a.kind}`}>{t(`kind_${a.kind}`)}</span></span>
               <span><span className={`pill ${a.priority}`}>{t(a.priority)}</span></span>
               <span><span className={`pill ${a.status}`}>{t(a.status)}</span></span>

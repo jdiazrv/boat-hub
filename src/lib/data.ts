@@ -1,3 +1,4 @@
+import { parseLocalDate, startOfToday } from "./dates";
 import { boats as demoBoats, inventoryItems as demoInventoryItems, maintenanceTasks as demoMaintenanceTasks, preventiveTasks as demoPreventiveTasks } from "../data/mock";
 import { isSupabaseConfigured, supabase } from "./supabase";
 import type { AppData, BoatSummary, InventoryItem, MaintenanceTask, PreventiveTask } from "./types";
@@ -112,9 +113,8 @@ function toPreventiveState(row: PreventiveRow): PreventiveTask["state"] {
   }
 
   if (row.next_due_date) {
-    const nextDue = new Date(row.next_due_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const nextDue = parseLocalDate(row.next_due_date);
+    const today = startOfToday();
 
     if (nextDue < today) {
       return "overdue";
