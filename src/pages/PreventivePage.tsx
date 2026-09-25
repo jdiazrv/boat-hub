@@ -212,10 +212,21 @@ export function PreventivePage() {
 
   function ruleLabel(entry: BoatScheduleEntry) {
     const { intervalDays, intervalHours } = entry;
-    if (intervalDays && intervalHours) return `${intervalDays} d / ${intervalHours} h`;
-    if (intervalDays) return `${intervalDays} días`;
-    if (intervalHours) return `${intervalHours} h motor`;
-    return "—";
+    const base = intervalDays && intervalHours
+      ? `${intervalDays} d / ${intervalHours} h`
+      : intervalDays
+        ? `${intervalDays} días`
+        : intervalHours
+          ? `${intervalHours} h motor`
+          : "—";
+    // Con las horas del contador (a mano o del barco), cuánto queda.
+    if (entry.nextDueHours != null && entry.currentHours != null) {
+      const left = Math.round(entry.nextDueHours - entry.currentHours);
+      return left >= 0
+        ? `${base} · ${locale === "es" ? "faltan" : "due in"} ${left} h`
+        : `${base} · ${locale === "es" ? "pasada" : "over by"} ${-left} h`;
+    }
+    return base;
   }
 
   function stateLabel(state: BoatScheduleEntry["state"]) {

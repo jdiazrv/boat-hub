@@ -147,6 +147,12 @@ export type BoatScheduleEntry = {
   nextDueDate: string | null;
   responsible: string | null;
   notes: string | null;
+  /** Contador de horas de la tarea; null = el del barco si solo hay uno. */
+  hourCounterId: string | null;
+  /** Horas del contador al que vence (hecha + intervalo), si se sabe. */
+  nextDueHours: number | null;
+  /** Lectura actual de ese contador, si hay. */
+  currentHours: number | null;
   // joined
   template: MaintenanceTemplate;
   state: "ok" | "due_soon" | "overdue";
@@ -593,6 +599,18 @@ export type HourCounter = {
   name: string;
   currentHours: number;
   notes: string | null;
+};
+
+/** Un aparato del barco que manda las horas solo (REWIND), ligado a un contador. */
+export type HourCounterDevice = {
+  id: string;
+  boatId: string;
+  hourCounterId: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  lastValueHours: number | null;
+  revokedAt: string | null;
 };
 
 export type HourLog = {

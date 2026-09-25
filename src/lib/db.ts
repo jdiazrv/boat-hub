@@ -17,6 +17,7 @@ import type {
   HaulOut,
   HaulOutItem,
   HourCounter,
+  HourCounterDevice,
   HourLog,
   InventoryCatalogItem,
   InventoryItem,
@@ -1142,7 +1143,48 @@ export async function deleteAttachment(id: string, storagePath: string) {
 
 // ─── Boat Maintenance Schedule ────────────────────────────────────────────────
 
-function mapScheduleRow(r: any): BoatScheduleEntry {
+/**
+ * Estado de una tarea por horas de motor (2026-09-25): hasta ahora solo
+ * vencían por fecha, y las horas se enseñaban como texto. Vencida si el
+ * contador ya pasó de "hecha + intervalo"; próxima si le faltan menos del
+ * 10 % del intervalo (mínimo 10 h).
+ */
+export function hourDueState(
+  intervalHours: number | null,
+  lastDoneEngineHours: number | null,
+  currentHours: number | null,
+): { nextDueHours: number | null; state: BoatScheduleEntry["state"] } {
+  if (!intervalHours || lastDoneEngineHours == null) {
+    return { nextDueHours: null, state: "ok" };
+  }
+  const nextDueHours = lastDoneEngineHours + intervalHours;
+  if (currentHours == null) return { nextDueHours, state: "ok" };
+  if (currentHours >= nextDueHours) return { nextDueHours, state: "overdue" };
+  if (nextDueHours - currentHours <= Math.max(10, intervalHours * 0.1)) {
+    return { nextDueHours, state: "due_soon" };
+  }
+  return { nextDueHours, state: "ok" };
+}
+
+/** El contador de una tarea: el suyo, o el del barco si solo hay uno, o el del motor. */
+export function counterForSchedule(
+  hourCounterId: string | null,
+  counters: HourCounter[],
+): HourCounter | null {
+  if (hourCounterId) return counters.find((c) => c.id === hourCounterId) ?? null;
+  if (counters.length === 1) return counters[0];
+  return (
+    counters.find((c) => /motor|engine/i.test(c.name)) ?? null
+  );
+}
+
+const STATE_RANK: Record<BoatScheduleEntry["state"], number> = {
+  ok: 0,
+  due_soon: 1,
+  overdue: 2,
+};
+
+function mapScheduleRow(r: any, counters: HourCounter[] = []): BoatScheduleEntry {
   const mt = Array.isArray(r.maintenance_templates)
     ? r.maintenance_templates[0]
     : r.maintenance_templates;
@@ -1157,6 +1199,15 @@ function mapScheduleRow(r: any): BoatScheduleEntry {
     if (due < today) state = "overdue";
     else if (due.getTime() - today.getTime() <= soonMs) state = "due_soon";
   }
+  // Lo que venza antes: por fecha o por horas.
+  const counter = counterForSchedule(r.hour_counter_id ?? null, counters);
+  const currentHours = counter ? counter.currentHours : null;
+  const byHours = hourDueState(
+    r.interval_hours ?? null,
+    r.last_done_engine_hours ?? null,
+    currentHours,
+  );
+  if (STATE_RANK[byHours.state] > STATE_RANK[state]) state = byHours.state;
   return {
     id: r.id,
     boatId: r.boat_id,
@@ -1169,6 +1220,9 @@ function mapScheduleRow(r: any): BoatScheduleEntry {
     nextDueDate: r.next_due_date,
     responsible: r.responsible,
     notes: r.notes,
+    hourCounterId: r.hour_counter_id ?? null,
+    nextDueHours: byHours.nextDueHours,
+    currentHours,
     state,
     template: {
       id: mt?.id ?? r.template_id,
@@ -1208,6 +1262,7 @@ export async function fetchBoatSchedule(boatId: string): Promise<BoatScheduleEnt
     .select(`
       id, boat_id, template_id, interval_days, interval_hours,
       last_done_at, last_done_engine_hours, last_done_notes, next_due_date, responsible, notes,
+      hour_counter_id,
       maintenance_templates (
         id, boat_id, created_by, system_id, title, title_es, title_en,
         description, description_es, description_en, kind, default_priority, sort_order,
@@ -1217,7 +1272,10 @@ export async function fetchBoatSchedule(boatId: string): Promise<BoatScheduleEnt
     .eq("boat_id", boatId)
     .order("next_due_date", { ascending: true, nullsFirst: false });
   if (error) throw error;
-  return ((data ?? []) as any[]).map(mapScheduleRow);
+  // Las horas actuales de los contadores, para el vencimiento por horas.
+  // Si fallan, se sigue solo por fecha.
+  const counters = await fetchHourCounters(boatId).catch(() => [] as HourCounter[]);
+  return ((data ?? []) as any[]).map((r) => mapScheduleRow(r, counters));
 }
 
 export async function addScheduleEntry(boatId: string, templateId: string, payload: {
@@ -1826,6 +1884,45 @@ export async function fetchHourCounters(boatId: string): Promise<HourCounter[]> 
     ...counter,
     currentHours: latestByCounter.get(counter.id) ?? 0,
   }));
+}
+
+// ─── Aparatos que mandan las horas solos (REWIND) ────────────────────────────
+
+export async function fetchHourCounterDevices(boatId: string): Promise<HourCounterDevice[]> {
+  const { data, error } = await db()
+    .from("hour_counter_devices")
+    .select("id, boat_id, hour_counter_id, name, created_at, last_used_at, last_value_hours, revoked_at")
+    .eq("boat_id", boatId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id,
+    boatId: r.boat_id,
+    hourCounterId: r.hour_counter_id,
+    name: r.name,
+    createdAt: r.created_at,
+    lastUsedAt: r.last_used_at,
+    lastValueHours: r.last_value_hours == null ? null : Number(r.last_value_hours),
+    revokedAt: r.revoked_at,
+  }));
+}
+
+/** Crea el aparato y devuelve su token en claro: solo se ve esta vez. */
+export async function createHourCounterDevice(hourCounterId: string, name: string): Promise<string> {
+  const { data, error } = await db().rpc("create_hour_counter_device", {
+    p_hour_counter_id: hourCounterId,
+    p_name: name,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function revokeHourCounterDevice(id: string): Promise<void> {
+  const { error } = await db()
+    .from("hour_counter_devices")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 export async function createHourCounter(boatId: string, name: string, notes?: string | null): Promise<HourCounter> {
