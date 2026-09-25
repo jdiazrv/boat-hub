@@ -1257,20 +1257,28 @@ export async function fetchBoatScheduleTemplateIds(boatId: string): Promise<Set<
 }
 
 export async function fetchBoatSchedule(boatId: string): Promise<BoatScheduleEntry[]> {
-  const { data, error } = await db()
-    .from("boat_maintenance_schedule")
-    .select(`
+  const cols = (withCounter: boolean) => `
       id, boat_id, template_id, interval_days, interval_hours,
       last_done_at, last_done_engine_hours, last_done_notes, next_due_date, responsible, notes,
-      hour_counter_id,
+      ${withCounter ? "hour_counter_id," : ""}
       maintenance_templates (
         id, boat_id, created_by, system_id, title, title_es, title_en,
         description, description_es, description_en, kind, default_priority, sort_order,
         system_catalog ( code, name_es, name_en )
       )
-    `)
-    .eq("boat_id", boatId)
-    .order("next_due_date", { ascending: true, nullsFirst: false });
+    `;
+  const query = (withCounter: boolean) =>
+    db()
+      .from("boat_maintenance_schedule")
+      .select(cols(withCounter))
+      .eq("boat_id", boatId)
+      .order("next_due_date", { ascending: true, nullsFirst: false });
+  let { data, error } = await query(true);
+  // Sin la migración 0018 aún aplicada, la columna no existe (42703): se
+  // carga como antes en vez de dejar la página vacía.
+  if (error && (error as { code?: string }).code === "42703") {
+    ({ data, error } = await query(false));
+  }
   if (error) throw error;
   // Las horas actuales de los contadores, para el vencimiento por horas.
   // Si fallan, se sigue solo por fecha.
