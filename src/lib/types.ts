@@ -758,3 +758,42 @@ export type AdminUser = {
   lastSignInAt: string | null;
   assignments: AdminUserAssignment[];
 };
+
+// ─── Boat Products (caja de mantenimiento) ───────────────────────────────────
+
+export type BoatProductStatus = "ok" | "low" | "dont_restock" | "missing";
+
+export type BoatProductPhoto = {
+  id: string;
+  fileName: string;
+  storagePath: string;
+  kind: "own" | "catalog";
+  signedUrl: string | null;
+  createdAt: string;
+};
+
+export type BoatProduct = {
+  id: string;
+  boatId: string;
+  number: number | null;
+  name: string;
+  productType: string | null;
+  usage: string | null;
+  groupName: string | null;
+  location: string | null;
+  status: BoatProductStatus;
+  onFinish: string | null;
+  linkUrl: string | null;
+  winterizing: boolean;
+  notes: string | null;
+  coverAttachmentId: string | null;
+  photos: BoatProductPhoto[];
+};
+
+export type BoatProductNote = {
+  id: string;
+  boatId: string;
+  title: string;
+  body: string | null;
+  sortOrder: number;
+};

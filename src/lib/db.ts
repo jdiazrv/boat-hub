@@ -9,6 +9,10 @@ import type {
   BoatDimensions,
   BoatIdentifiers,
   BoatInventoryCatalogEntry,
+  BoatProduct,
+  BoatProductNote,
+  BoatProductPhoto,
+  BoatProductStatus,
   BoatSystem,
   BoatTank,
   FuelLog,
@@ -1848,6 +1852,180 @@ export async function updateInventoryItem(id: string, payload: Partial<Omit<Inve
 
 export async function deleteInventoryItem(id: string) {
   const { error } = await db().from("inventory_items").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ─── Boat Products (caja de mantenimiento) ───────────────────────────────────
+
+type BoatProductPayload = Omit<BoatProduct, "id" | "photos" | "coverAttachmentId">;
+
+function productRow(p: Partial<BoatProductPayload>) {
+  return {
+    boat_id: p.boatId,
+    number: p.number,
+    name: p.name,
+    product_type: p.productType,
+    usage: p.usage,
+    group_name: p.groupName,
+    location: p.location,
+    status: p.status,
+    on_finish: p.onFinish,
+    link_url: p.linkUrl,
+    winterizing: p.winterizing,
+    notes: p.notes,
+  };
+}
+
+export async function fetchBoatProducts(boatId: string): Promise<BoatProduct[]> {
+  const client = db();
+  const [{ data, error }, { data: attData, error: attError }] = await Promise.all([
+    client
+      .from("boat_products")
+      .select("id, boat_id, number, name, product_type, usage, group_name, location, status, on_finish, link_url, winterizing, notes, cover_attachment_id")
+      .eq("boat_id", boatId)
+      .order("number", { ascending: true, nullsFirst: false })
+      .order("name"),
+    client
+      .from("attachments")
+      .select("id, target_id, file_name, storage_path, document_category, created_at")
+      .eq("boat_id", boatId)
+      .eq("target_type", "boat_product")
+      .order("created_at", { ascending: true }),
+  ]);
+  if (error) throw error;
+  if (attError) throw attError;
+
+  const atts = (attData ?? []) as any[];
+  // One request for every signed URL instead of one per photo.
+  const urls = new Map<string, string>();
+  if (atts.length) {
+    const { data: signed } = await client.storage
+      .from("attachments")
+      .createSignedUrls(atts.map((a) => a.storage_path), 3600);
+    for (const s of signed ?? []) if (s.path && s.signedUrl) urls.set(s.path, s.signedUrl);
+  }
+  const photosByProduct = new Map<string, BoatProductPhoto[]>();
+  for (const a of atts) {
+    const list = photosByProduct.get(a.target_id) ?? [];
+    list.push({
+      id: a.id,
+      fileName: a.file_name,
+      storagePath: a.storage_path,
+      kind: a.document_category === "catalog" ? "catalog" : "own",
+      signedUrl: urls.get(a.storage_path) ?? null,
+      createdAt: a.created_at,
+    });
+    photosByProduct.set(a.target_id, list);
+  }
+
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id,
+    boatId: r.boat_id,
+    number: r.number ?? null,
+    name: r.name,
+    productType: r.product_type ?? null,
+    usage: r.usage ?? null,
+    groupName: r.group_name ?? null,
+    location: r.location ?? null,
+    status: (r.status ?? "ok") as BoatProductStatus,
+    onFinish: r.on_finish ?? null,
+    linkUrl: r.link_url ?? null,
+    winterizing: !!r.winterizing,
+    notes: r.notes ?? null,
+    coverAttachmentId: r.cover_attachment_id ?? null,
+    photos: photosByProduct.get(r.id) ?? [],
+  }));
+}
+
+export async function createBoatProduct(payload: BoatProductPayload): Promise<string> {
+  const { data, error } = await db().from("boat_products").insert(productRow(payload)).select("id").single();
+  if (error) throw error;
+  return (data as any).id as string;
+}
+
+export async function updateBoatProduct(id: string, payload: Partial<BoatProductPayload>) {
+  const row = productRow(payload);
+  delete (row as Partial<typeof row>).boat_id;
+  const { error } = await db().from("boat_products").update(row).eq("id", id);
+  if (error) throw error;
+}
+
+export async function setBoatProductCover(id: string, attachmentId: string | null) {
+  const { error } = await db().from("boat_products").update({ cover_attachment_id: attachmentId }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteBoatProduct(product: Pick<BoatProduct, "id" | "photos">) {
+  const client = db();
+  // Photos first: attachments only point at the product by id, nothing cascades.
+  if (product.photos.length) {
+    await client.storage.from("attachments").remove(product.photos.map((p) => p.storagePath));
+    const { error: attError } = await client.from("attachments").delete().in("id", product.photos.map((p) => p.id));
+    if (attError) throw attError;
+  }
+  const { error } = await client.from("boat_products").delete().eq("id", product.id);
+  if (error) throw error;
+}
+
+export async function uploadBoatProductPhotos(boatId: string, productId: string, files: File[], kind: "own" | "catalog") {
+  const client = db();
+  for (const file of files) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `${boatId}/boat_product/${productId}/${crypto.randomUUID()}-${safeName}`;
+    const { error: uploadError } = await client.storage
+      .from("attachments")
+      .upload(storagePath, file, { contentType: file.type || undefined, upsert: false });
+    if (uploadError) throw uploadError;
+    const { error } = await client.from("attachments").insert({
+      boat_id: boatId,
+      target_type: "boat_product",
+      target_id: productId,
+      file_name: file.name,
+      storage_bucket: "attachments",
+      storage_path: storagePath,
+      mime_type: file.type || null,
+      file_size_bytes: file.size,
+      document_category: kind === "catalog" ? "catalog" : "photo",
+    });
+    if (error) throw error;
+  }
+}
+
+export async function setBoatProductPhotoKind(attachmentId: string, kind: "own" | "catalog") {
+  const { error } = await db()
+    .from("attachments")
+    .update({ document_category: kind === "catalog" ? "catalog" : "photo" })
+    .eq("id", attachmentId);
+  if (error) throw error;
+}
+
+export async function fetchBoatProductNotes(boatId: string): Promise<BoatProductNote[]> {
+  const { data, error } = await db()
+    .from("boat_product_notes")
+    .select("id, boat_id, title, body, sort_order")
+    .eq("boat_id", boatId)
+    .order("sort_order")
+    .order("created_at");
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id,
+    boatId: r.boat_id,
+    title: r.title,
+    body: r.body ?? null,
+    sortOrder: r.sort_order ?? 0,
+  }));
+}
+
+export async function saveBoatProductNote(note: Omit<BoatProductNote, "id"> & { id?: string }) {
+  const row = { boat_id: note.boatId, title: note.title, body: note.body, sort_order: note.sortOrder };
+  const { error } = note.id
+    ? await db().from("boat_product_notes").update(row).eq("id", note.id)
+    : await db().from("boat_product_notes").insert(row);
+  if (error) throw error;
+}
+
+export async function deleteBoatProductNote(id: string) {
+  const { error } = await db().from("boat_product_notes").delete().eq("id", id);
   if (error) throw error;
 }
 

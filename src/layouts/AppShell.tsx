@@ -61,6 +61,7 @@ const NAV_GROUPS: NavGroupDef[] = [
       { to: "/maintenance", key: "maintenance" },
       { to: "/observations", key: "observations" },
       { to: "/inventory", key: "inventory" },
+      { to: "/products", key: "products" },
       { to: "/hours", key: "hours" },
       { to: "/fuel", key: "fuel" },
     ],

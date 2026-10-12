@@ -2429,3 +2429,168 @@ html[data-theme="niebla"] .form-select {
 .location-search-dropdown li:hover {
   background: var(--input-bg);
 }
+
+/* ─── Productos (caja de mantenimiento) ──────────────────────────────────── */
+
+.prod-table { position: relative; padding: 0.25rem 0.5rem; }
+.prod-row {
+  display: grid;
+  grid-template-columns: 2.4rem 3.6rem minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1.4fr);
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.3rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.86rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.prod-row:hover { background: var(--input-bg); }
+.prod-row:last-child { border-bottom: 0; }
+.prod-head {
+  cursor: default;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.prod-head:hover { background: none; }
+.prod-group {
+  margin: 0.6rem 0 0.1rem;
+  padding: 0.1rem 0.4rem;
+  border-left: 4px solid;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.prod-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.3rem;
+  border-radius: 1rem;
+  color: #fff;
+  font-size: 0.85rem;
+}
+.prod-thumb {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  background: #fff;
+  cursor: zoom-in;
+  line-height: 0;
+}
+.prod-thumb img { width: 3.4rem; height: 3.4rem; object-fit: contain; display: block; }
+.prod-thumb-empty {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.4rem;
+  color: var(--text-soft);
+  font-size: 0.62rem;
+  text-align: center;
+}
+.prod-name strong { display: block; font-weight: 600; }
+.prod-link { font-size: 0.75rem; color: var(--accent); margin-right: 0.5rem; }
+.prod-where { display: inline-block; font-size: 0.72rem; color: var(--text-soft); }
+.prod-type { color: var(--text-soft); }
+.prod-notes { display: block; margin-top: 0.15rem; font-size: 0.78rem; color: var(--text-soft); white-space: pre-line; }
+.prod-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.6rem;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.prod-finish { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.82rem; }
+.prod-ok { color: #2f9a55; font-weight: 600; }
+.prod-note { color: var(--text-soft); }
+.prod-status {
+  align-self: flex-start;
+  padding: 0 0.45rem;
+  border-radius: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent-warm, #e8a317) 22%, transparent);
+}
+.prod-status.s-dont_restock { background: color-mix(in srgb, var(--text-soft) 20%, transparent); }
+.prod-buy { align-self: flex-start; padding: 0.2rem 0.6rem; font-size: 0.78rem; }
+.prod-section-title { margin: 1.4rem 0 0.5rem; }
+.prod-missing .prod-row { background: color-mix(in srgb, var(--danger) 7%, transparent); }
+.prod-notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.6rem; }
+.prod-note-card { cursor: pointer; padding: 0.7rem 0.9rem; }
+.prod-note-card p { margin: 0.35rem 0 0; white-space: pre-line; font-size: 0.86rem; color: var(--text-soft); }
+.prod-form-head { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0.75rem; }
+
+.prod-photo-grid { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.5rem; }
+.prod-photo-item {
+  position: relative;
+  width: 7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--input-bg);
+}
+.prod-photo-item.is-cover { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
+.prod-photo-item img { display: block; width: 100%; height: 6rem; object-fit: contain; background: #fff; }
+.prod-photo-kind { display: block; padding: 0.15rem 0.35rem; font-size: 0.68rem; color: var(--text-soft); }
+.prod-photo-actions { display: flex; justify-content: space-between; padding: 0 0.25rem 0.25rem; }
+
+.prod-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: rgba(8, 14, 22, 0.92);
+  padding: 1rem;
+}
+.prod-lightbox-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; color: #fff; margin-bottom: 0.75rem; }
+.prod-lightbox-bar button { background: rgba(255,255,255,0.14); border: 0; color: #fff; border-radius: 0.5rem; padding: 0.3rem 0.7rem; cursor: pointer; }
+.prod-lightbox-photos { flex: 1; min-height: 0; display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap; overflow: auto; }
+.prod-lightbox-photos figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; max-width: min(46vw, 640px); }
+.prod-lightbox-photos img { max-width: 100%; max-height: 75vh; object-fit: contain; background: #fff; border-radius: 0.6rem; }
+.prod-lightbox-photos figcaption { color: rgba(255,255,255,0.75); font-size: 0.82rem; }
+.prod-lightbox-empty { color: rgba(255,255,255,0.6); }
+.prod-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  font-size: 1.6rem;
+  cursor: pointer;
+}
+.prod-lightbox-nav.prev { left: 0.6rem; }
+.prod-lightbox-nav.next { right: 0.6rem; }
+
+@media (max-width: 720px) {
+  .prod-head { display: none; }
+  .prod-row {
+    grid-template-columns: 2.2rem 3.6rem minmax(0, 1fr);
+    grid-template-areas: "n f nm" "n f ty" "us us us" "fi fi fi";
+    row-gap: 0.15rem;
+  }
+  .prod-num { grid-area: n; align-self: start; }
+  .prod-photo { grid-area: f; }
+  .prod-name { grid-area: nm; }
+  .prod-type { grid-area: ty; font-size: 0.8rem; }
+  .prod-usage { grid-area: us; }
+  .prod-finish { grid-area: fi; }
+  .prod-finish:empty { display: none; }
+  .prod-lightbox-photos figure { max-width: 100%; }
+  .prod-lightbox-photos img { max-height: 40vh; }
+}

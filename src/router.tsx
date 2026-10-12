@@ -36,6 +36,7 @@ export const router = createBrowserRouter([
       { path: "future-actions", lazy: page(() => import("./pages/FutureActionsPage"), "FutureActionsPage") },
       { path: "purchases", lazy: page(() => import("./pages/PurchasesPage"), "PurchasesPage") },
       { path: "inventory", lazy: page(() => import("./pages/InventoryPage"), "InventoryPage") },
+      { path: "products", lazy: page(() => import("./pages/ProductsPage"), "ProductsPage") },
       { path: "inventory-catalog", lazy: page(() => import("./pages/InventoryCatalogPage"), "InventoryCatalogPage") },
       { path: "hours", lazy: page(() => import("./pages/HoursPage"), "HoursPage") },
       { path: "hour-counters", lazy: page(() => import("./pages/HourCountersPage"), "HourCountersPage") },
