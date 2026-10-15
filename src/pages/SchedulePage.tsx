@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as db from "../lib/db";
 import { todayLocalISO } from "../lib/dates";
 import type { BoatCatalogOverride, BoatScheduleEntry, BoatSystem, MaintenanceTemplate, MaintenanceTemplateSpare } from "../lib/types";
@@ -378,7 +378,15 @@ export function SchedulePage() {
   const [modal, setModal] = useState<ModalMode | null>(null);
   const [systemFilter, setSystemFilter] = useState("");
   const [stateFilter, setStateFilter] = useState<StateFilter>("");
-  const [view, setView] = useState<ScheduleView>("list");
+  // Se abre en la última vista elegida (por defecto, el Gantt con las barras).
+  const [view, setViewState] = useState<ScheduleView>(() => {
+    try { return localStorage.getItem("schedule-view") === "list" ? "list" : "gantt"; }
+    catch { return "gantt"; }
+  });
+  function setView(next: ScheduleView) {
+    setViewState(next);
+    try { localStorage.setItem("schedule-view", next); } catch { /* sin almacenamiento */ }
+  }
   const [boatSystems, setBoatSystems] = useState<BoatSystem[]>([]);
   const { refresh: refreshAppData } = useAppData();
 
@@ -439,14 +447,59 @@ export function SchedulePage() {
     return acc;
   }, {});
 
+  // Del trabajo hecho más antiguo al vencimiento más lejano, con al menos un
+  // año a cada lado de hoy (y como mucho 5 atrás y 6 adelante).
   const ganttRange = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const start = startOfMonth(today);
-    const end = addMonths(start, 12);
-    const months = Array.from({ length: 12 }, (_, index) => addMonths(start, index));
-    return { start, end, months, totalDays: Math.max(1, daysBetween(start, end)) };
-  }, []);
+    const thisMonth = startOfMonth(today);
+    let start = addMonths(thisMonth, -12);
+    let end = addMonths(thisMonth, 13);
+    for (const entry of schedule) {
+      const done = parseDate(entry.lastDoneAt);
+      const due = parseDate(entry.nextDueDate);
+      if (done && done < start) start = startOfMonth(done);
+      if (due && due >= end) end = addMonths(startOfMonth(due), 2);
+    }
+    const earliest = addMonths(thisMonth, -60);
+    const latest = addMonths(thisMonth, 72);
+    if (start < earliest) start = earliest;
+    if (end > latest) end = latest;
+    const count = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+    const months = Array.from({ length: count }, (_, index) => addMonths(start, index));
+    const totalDays = Math.max(1, daysBetween(start, end));
+    const todayPct = (daysBetween(start, today) / totalDays) * 100;
+    // Una banda por año encima de los meses.
+    const years: Array<{ year: number; months: number }> = [];
+    for (const month of months) {
+      const last = years[years.length - 1];
+      if (last && last.year === month.getFullYear()) last.months += 1;
+      else years.push({ year: month.getFullYear(), months: 1 });
+    }
+    return { start, end, months, years, totalDays, todayPct, thisMonth };
+  }, [schedule]);
+
+  // Al abrir el Gantt, se coloca en hoy (con algo de pasado a la vista).
+  // Al cargar la página el tablero aún no tiene tamaño: se coloca en cuanto lo
+  // tenga (ResizeObserver), y solo una vez por cambio de vista o de rango.
+  const ganttRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const board = ganttRef.current;
+    if (view !== "gantt" || !board) return;
+    let positioned = false;
+    const position = () => {
+      const track = board.querySelector<HTMLElement>(".gantt-months");
+      if (positioned || !track || board.clientWidth === 0 || track.offsetWidth === 0) return;
+      const label = board.querySelector<HTMLElement>(".gantt-head-label")?.offsetWidth ?? 0;
+      const todayPx = (ganttRange.todayPct / 100) * track.offsetWidth;
+      board.scrollLeft = Math.max(0, todayPx - (board.clientWidth - label) / 3);
+      positioned = true;
+    };
+    position();
+    const observer = new ResizeObserver(position);
+    observer.observe(board);
+    return () => observer.disconnect();
+  }, [view, ganttRange]);
 
   function closeModal() { setModal(null); setError(null); }
 
@@ -700,15 +753,30 @@ export function SchedulePage() {
       )}
 
       {view === "gantt" && (
-        <div className="gantt-board">
+        <div
+          className="gantt-board" ref={ganttRef}
+          style={{ "--gantt-cols": ganttRange.months.length } as React.CSSProperties}
+        >
           <div className="gantt-head">
             <div className="gantt-head-label">Trabajo periódico</div>
-            <div className="gantt-months">
-              {ganttRange.months.map((month) => (
-                <span key={month.toISOString()}>
-                  {new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", { month: "short" }).format(month)}
-                </span>
-              ))}
+            <div className="gantt-timeline">
+              <div className="gantt-years">
+                {ganttRange.years.map((group) => (
+                  <span key={group.year} style={{ gridColumn: `span ${group.months}` }}>
+                    <strong>{group.year}</strong>
+                  </span>
+                ))}
+              </div>
+              <div className="gantt-months">
+                {ganttRange.months.map((month) => (
+                  <span
+                    key={month.toISOString()}
+                    className={month.getTime() === ganttRange.thisMonth.getTime() ? "is-today" : undefined}
+                  >
+                    {new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", { month: "short" }).format(month)}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -726,6 +794,7 @@ export function SchedulePage() {
                   <span className="gantt-task-rule">{ruleLabel(entry)}</span>
                 </button>
                 <div className="gantt-track">
+                  <span className="gantt-today" style={{ left: `${ganttRange.todayPct}%` }} />
                   {bar ? (
                     <button
                       type="button"
@@ -740,6 +809,7 @@ export function SchedulePage() {
                     <button
                       type="button"
                       className="gantt-no-date"
+                      style={{ left: `calc(${ganttRange.todayPct}% + 0.5rem)` }}
                       onClick={() => setModal({ kind: "edit-entry", entry })}
                     >
                       Sin fecha
