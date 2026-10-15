@@ -1883,6 +1883,58 @@ html[data-theme="niebla"] .form-select {
   background-size: var(--gantt-month) 100%;
 }
 
+/* Gravedad: naranja = toca pronto o poco pasada; rojo = muy pasada.
+   Fila teñida, franja y aviso en la columna fija, y cola rayada desde el
+   vencimiento hasta hoy. */
+.gantt-row.sev-warn { --sev: #f59e0b; }
+.gantt-row.sev-late { --sev: var(--danger); }
+
+.gantt-row.sev-warn,
+.gantt-row.sev-late {
+  background: color-mix(in srgb, var(--sev) 9%, transparent);
+}
+
+.gantt-row.sev-warn .gantt-task,
+.gantt-row.sev-late .gantt-task {
+  background: color-mix(in srgb, var(--sev) 16%, var(--panel-solid));
+  box-shadow: inset 4px 0 0 var(--sev);
+}
+
+.gantt-row.sev-warn .gantt-task-title,
+.gantt-row.sev-late .gantt-task-title {
+  color: var(--sev);
+}
+
+.gantt-task-overdue {
+  color: var(--sev, var(--danger));
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.gantt-row .gantt-bar.sev-warn {
+  background: #d97706;
+  border-color: #b45309;
+}
+
+.gantt-row .gantt-bar.sev-late {
+  background: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 80%, black);
+}
+
+.gantt-overdue-tail {
+  position: absolute;
+  top: 50%;
+  height: 1.65rem;
+  transform: translateY(-50%);
+  border-radius: 0 0.35rem 0.35rem 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--sev, var(--danger)) 55%, transparent) 0 6px,
+    color-mix(in srgb, var(--sev, var(--danger)) 20%, transparent) 6px 12px
+  );
+  pointer-events: none;
+}
+
 .gantt-today {
   position: absolute;
   top: 0;

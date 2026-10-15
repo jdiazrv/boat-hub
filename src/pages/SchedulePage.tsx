@@ -315,6 +315,37 @@ function stateLabel(state: BoatScheduleEntry["state"], locale: "es" | "en") {
   return (locale === "es" ? es : en)[state];
 }
 
+// Gravedad en el Gantt: naranja si toca pronto o va poco pasada, rojo si va
+// muy pasada (más de 30 días o de 50 h, o de un cuarto del intervalo si es corto).
+type Severity = "late" | "warn" | null;
+
+function overdueBy(entry: BoatScheduleEntry) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = entry.nextDueDate ? new Date(`${entry.nextDueDate}T00:00:00`) : null;
+  const days = due ? Math.round((today.getTime() - due.getTime()) / 86400000) : 0;
+  const hours = entry.nextDueHours != null && entry.currentHours != null
+    ? entry.currentHours - entry.nextDueHours
+    : 0;
+  return { days: Math.max(0, days), hours: Math.max(0, hours) };
+}
+
+function agoLabel(days: number) {
+  if (days >= 730) return `${Math.floor(days / 365)} años`;
+  if (days >= 365) return "1 año";
+  if (days >= 60) return `${Math.floor(days / 30)} meses`;
+  return `${days} ${days === 1 ? "día" : "días"}`;
+}
+
+function severity(entry: BoatScheduleEntry): Severity {
+  if (entry.state === "due_soon") return "warn";
+  if (entry.state !== "overdue") return null;
+  const { days, hours } = overdueBy(entry);
+  const dayLimit = Math.min(30, entry.intervalDays ? entry.intervalDays / 4 : 30);
+  const hourLimit = Math.min(50, entry.intervalHours ? entry.intervalHours / 4 : 50);
+  return days > dayLimit || hours > hourLimit ? "late" : "warn";
+}
+
 type ModalMode =
   | { kind: "pick-template" }
   | { kind: "add-entry"; template: MaintenanceTemplate }
@@ -782,8 +813,13 @@ export function SchedulePage() {
 
           {filtered.map((entry) => {
             const bar = ganttBar(entry);
+            // Vencida por fecha: cola rayada desde el vencimiento hasta hoy.
+            const duePct = bar ? bar.left + bar.width : null;
+            const sev = severity(entry);
+            const late = entry.state === "overdue" ? overdueBy(entry) : null;
+            const overdueDays = late?.days ?? 0;
             return (
-              <div key={entry.id} className={`gantt-row state-${entry.state}`}>
+              <div key={entry.id} className={`gantt-row state-${entry.state}${sev ? ` sev-${sev}` : ""}`}>
                 <button
                   type="button"
                   className="gantt-task"
@@ -792,13 +828,27 @@ export function SchedulePage() {
                   <span className="gantt-task-system">{entrySystem(entry, locale)}</span>
                   <span className="gantt-task-title">{entryTitle(entry, locale)}</span>
                   <span className="gantt-task-rule">{ruleLabel(entry)}</span>
+                  {late && (
+                    <span className="gantt-task-overdue">
+                      {overdueDays > 0
+                        ? `Vencida hace ${agoLabel(overdueDays)}`
+                        : `Vencida por ${Math.round(late.hours)} h`}
+                    </span>
+                  )}
+                  {entry.state === "due_soon" && <span className="gantt-task-overdue">Toca pronto</span>}
                 </button>
                 <div className="gantt-track">
                   <span className="gantt-today" style={{ left: `${ganttRange.todayPct}%` }} />
+                  {overdueDays > 0 && duePct != null && (
+                    <span
+                      className="gantt-overdue-tail"
+                      style={{ left: `${duePct}%`, width: `${Math.max(0, ganttRange.todayPct - duePct)}%` }}
+                    />
+                  )}
                   {bar ? (
                     <button
                       type="button"
-                      className={`gantt-bar state-${entry.state}`}
+                      className={`gantt-bar state-${entry.state}${sev ? ` sev-${sev}` : ""}`}
                       style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
                       onClick={() => setModal({ kind: "edit-entry", entry })}
                       title={`${entryTitle(entry, locale)} · ${entry.nextDueDate ?? ""}`}
