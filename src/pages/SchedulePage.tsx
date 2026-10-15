@@ -1,11 +1,57 @@
 import { useEffect, useMemo, useState } from "react";
 import * as db from "../lib/db";
-import type { BoatCatalogOverride, BoatScheduleEntry, MaintenanceTemplate, MaintenanceTemplateSpare } from "../lib/types";
+import { todayLocalISO } from "../lib/dates";
+import type { BoatCatalogOverride, BoatScheduleEntry, BoatSystem, MaintenanceTemplate, MaintenanceTemplateSpare } from "../lib/types";
 import { FormActions, FormGrid, FormSection, InputField, TextareaField } from "../components/FormField";
 import { Modal } from "../components/Modal";
 import { useI18n } from "../lib/i18n";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { useActiveBoat } from "../providers/ActiveBoatProvider";
+import { useAppData } from "../providers/AppDataProvider";
+
+// ─── Registrar un trabajo hecho ───────────────────────────────────────────────
+// Crea la tarea en el historial de mantenimiento; el plan se pone al día solo
+// (disparador sync_completed_maintenance_task_to_schedule). Así no hay dos
+// sitios donde apuntar lo mismo.
+
+type DoneFormValue = { doneDate: string; hours: number | null; cost: number | null; notes: string | null };
+
+function RegisterDoneForm({
+  entry, loading, error, onSave, onCancel,
+}: {
+  entry: BoatScheduleEntry;
+  loading: boolean;
+  error: string | null;
+  onSave: (value: DoneFormValue) => void;
+  onCancel: () => void;
+}) {
+  const today = todayLocalISO();
+  const [form, setForm] = useState<DoneFormValue>({
+    doneDate: today,
+    hours: entry.currentHours != null ? Math.round(entry.currentHours * 10) / 10 : null,
+    cost: null,
+    notes: null,
+  });
+  return (
+    <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+      <FormSection title={entry.template.titleEn || entry.template.title}>
+        <FormGrid>
+          <InputField label="Fecha en que se hizo" type="date" required max={today} value={form.doneDate}
+            onChange={(e) => setForm((p) => ({ ...p, doneDate: e.target.value }))} />
+          <InputField label="Horas del contador" type="number" step="0.1" value={form.hours ?? ""}
+            onChange={(e) => setForm((p) => ({ ...p, hours: e.target.value ? Number(e.target.value) : null }))} />
+          <InputField label="Coste" type="number" value={form.cost ?? ""}
+            onChange={(e) => setForm((p) => ({ ...p, cost: e.target.value ? Number(e.target.value) : null }))} />
+        </FormGrid>
+        <TextareaField label="Notas" value={form.notes ?? ""}
+          onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value || null }))} />
+        <p className="field-hint">Se guarda en el historial de mantenimiento y el plan se actualiza solo.</p>
+      </FormSection>
+      {error && <p className="form-error">{error}</p>}
+      <FormActions onCancel={onCancel} loading={loading} />
+    </form>
+  );
+}
 
 // ─── Schedule entry form ──────────────────────────────────────────────────────
 
@@ -259,10 +305,21 @@ function TemplatePicker({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+type StateFilter = "" | BoatScheduleEntry["state"];
+
+const STATE_ORDER: Record<BoatScheduleEntry["state"], number> = { overdue: 0, never: 1, due_soon: 2, ok: 3 };
+
+function stateLabel(state: BoatScheduleEntry["state"], locale: "es" | "en") {
+  const es = { overdue: "Vencida", never: "Sin registrar", due_soon: "Próxima", ok: "Al día" };
+  const en = { overdue: "Overdue", never: "Never logged", due_soon: "Due soon", ok: "Up to date" };
+  return (locale === "es" ? es : en)[state];
+}
+
 type ModalMode =
   | { kind: "pick-template" }
   | { kind: "add-entry"; template: MaintenanceTemplate }
-  | { kind: "edit-entry"; entry: BoatScheduleEntry };
+  | { kind: "edit-entry"; entry: BoatScheduleEntry }
+  | { kind: "register-done"; entry: BoatScheduleEntry };
 
 type ScheduleView = "list" | "gantt";
 
@@ -320,18 +377,23 @@ export function SchedulePage() {
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalMode | null>(null);
   const [systemFilter, setSystemFilter] = useState("");
-  const [view, setView] = useState<ScheduleView>("gantt");
+  const [stateFilter, setStateFilter] = useState<StateFilter>("");
+  const [view, setView] = useState<ScheduleView>("list");
+  const [boatSystems, setBoatSystems] = useState<BoatSystem[]>([]);
+  const { refresh: refreshAppData } = useAppData();
 
   async function refresh() {
     if (!activeBoatId) return;
     setLoading(true);
     try {
-      const [s, tmpl, overrides] = await Promise.all([
+      const [s, tmpl, overrides, systems] = await Promise.all([
         db.fetchBoatSchedule(activeBoatId),
         db.fetchMaintenanceTemplates(),
         db.fetchBoatCatalogOverridesMap(activeBoatId),
+        db.fetchBoatSystems(activeBoatId),
       ]);
       setSchedule(s);
+      setBoatSystems(systems);
       setAllTemplates(tmpl);
       setOverridesMap(overrides);
       const spares = await db.fetchMaintenanceTemplateSpares(tmpl.map((template) => template.id));
@@ -360,10 +422,22 @@ export function SchedulePage() {
     ])).values()
   ).sort((a, b) => a.nameEs.localeCompare(b.nameEs));
 
-  const filtered = useMemo(
+  const bySystem = useMemo(
     () => schedule.filter((e) => !systemFilter || e.template.systemCode === systemFilter),
     [schedule, systemFilter]
   );
+  // Primero lo que pide atención: vencidas, sin registrar, próximas.
+  const filtered = useMemo(
+    () => bySystem
+      .filter((e) => !stateFilter || e.state === stateFilter)
+      .sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state]
+        || (a.nextDueDate ?? "9999").localeCompare(b.nextDueDate ?? "9999")),
+    [bySystem, stateFilter]
+  );
+  const stateCounts = bySystem.reduce<Record<string, number>>((acc, e) => {
+    acc[e.state] = (acc[e.state] ?? 0) + 1;
+    return acc;
+  }, {});
 
   const ganttRange = useMemo(() => {
     const today = new Date();
@@ -403,6 +477,40 @@ export function SchedulePage() {
       await db.updateScheduleEntry(modal.entry.id, form);
       await db.replaceMaintenanceTemplateSpares(modal.entry.template.id, modal.entry.template.systemId, form.spares);
       await refresh();
+      closeModal();
+    } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
+    finally { setSaving(false); }
+  }
+
+  async function handleRegisterDone(value: DoneFormValue) {
+    if (!activeBoatId || modal?.kind !== "register-done") return;
+    const { entry } = modal;
+    const system = boatSystems.find((s) => s.systemId === entry.template.systemId) ?? boatSystems[0];
+    if (!system) { setError("Añade primero al menos un sistema al barco."); return; }
+    setSaving(true); setError(null);
+    try {
+      await db.createMaintenanceTask({
+        templateId: entry.templateId,
+        boatId: activeBoatId,
+        boatSystemId: system.id,
+        boatComponentId: null,
+        haulOutId: null,
+        // El historial se lleva en inglés, sea cual sea el idioma de la app.
+        title: entry.template.titleEn || entry.template.title,
+        description: entry.template.descriptionEn || entry.template.description,
+        kind: entry.template.kind,
+        status: "done",
+        priority: entry.template.defaultPriority,
+        dueDate: null,
+        doneDate: value.doneDate,
+        responsible: null,
+        performedBy: null,
+        location: null,
+        engineHours: value.hours,
+        cost: value.cost,
+        notes: value.notes,
+      });
+      await Promise.all([refresh(), refreshAppData()]);
       closeModal();
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setSaving(false); }
@@ -517,6 +625,18 @@ export function SchedulePage() {
         </div>
       </div>
 
+      <div className="filter-bar" style={{ marginTop: "-0.25rem" }}>
+        {([""] as StateFilter[]).concat(["overdue", "never", "due_soon", "ok"]).map((state) => (
+          <button
+            key={state || "all"} type="button"
+            className={stateFilter === state ? "filter-chip active" : "filter-chip"}
+            onClick={() => setStateFilter(state)}
+          >
+            {state ? `${stateLabel(state, locale)} (${stateCounts[state] ?? 0})` : `Todas (${bySystem.length})`}
+          </button>
+        ))}
+      </div>
+
       {loading && <p className="data-table-cell-muted">Cargando…</p>}
 
       {schedule.length === 0 && !loading && (
@@ -530,7 +650,7 @@ export function SchedulePage() {
           {filtered.map((entry) => (
             <div key={entry.id} className={`schedule-row state-${entry.state}`}>
               <div className="schedule-row-info">
-                <span className="schedule-row-sys">{entrySystem(entry, locale)}</span>
+                <span className="schedule-row-sys">{entrySystem(entry, locale)} · {stateLabel(entry.state, locale)}</span>
                 <span className="schedule-row-title">{entryTitle(entry, locale)}</span>
               </div>
               <div className="schedule-row-meta">
@@ -540,21 +660,42 @@ export function SchedulePage() {
                 </span>
                 <span className="schedule-meta-item">
                   <span className="schedule-meta-label">{t("lastDoneAt")}</span>
-                  <strong>{entry.lastDoneAt ?? "—"}</strong>
+                  <strong>
+                    {entry.lastDoneAt ?? "—"}
+                    {entry.lastDoneEngineHours != null ? ` · ${entry.lastDoneEngineHours} h` : ""}
+                  </strong>
+                </span>
+                <span className="schedule-meta-item">
+                  <span className="schedule-meta-label">Próxima</span>
+                  <strong>{entry.nextDueDate ?? (entry.state === "never" ? "¿?" : "—")}</strong>
                 </span>
               </div>
               <div className="schedule-row-actions">
                 {isSupabaseConfigured && (
-                  <button
-                    className="btn-icon" type="button"
-                    onClick={() => setModal({ kind: "edit-entry", entry })}
-                  >
-                    ✏
-                  </button>
+                  <>
+                    <button
+                      className="btn-ghost compact-button" type="button"
+                      title="Registrar que se ha hecho"
+                      onClick={() => { setError(null); setModal({ kind: "register-done", entry }); }}
+                    >
+                      ✓ Hecha
+                    </button>
+                    <button
+                      className="btn-icon" type="button" title="Editar periodicidad"
+                      onClick={() => setModal({ kind: "edit-entry", entry })}
+                    >
+                      ✏
+                    </button>
+                  </>
                 )}
               </div>
             </div>
           ))}
+          {filtered.length === 0 && !loading && schedule.length > 0 && (
+            <div className="empty-state">
+              <p>No hay trabajos periódicos con estos filtros.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -663,6 +804,18 @@ export function SchedulePage() {
             loading={saving}
             error={error}
             onSave={handleSaveEntry}
+            onCancel={closeModal}
+          />
+        </Modal>
+      )}
+
+      {modal?.kind === "register-done" && (
+        <Modal title="Registrar trabajo hecho" onClose={closeModal}>
+          <RegisterDoneForm
+            entry={modal.entry}
+            loading={saving}
+            error={error}
+            onSave={handleRegisterDone}
             onCancel={closeModal}
           />
         </Modal>

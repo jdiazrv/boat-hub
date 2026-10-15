@@ -199,7 +199,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     system: "Sistema",
     boat: "Barco",
     responsible: "Responsable",
-    dueDate: "Fecha limite",
+    dueDate: "Fecha límite",
     doneDate: "Fecha realización",
     plannedDate: "Fecha prevista",
     startDate: "Inicio",
@@ -525,12 +525,18 @@ const dictionaries: Record<Locale, Dictionary> = {
     sectionAcquisition: "Adquisición",
     // Maintenance form sections
     sectionChooseFromCatalog: "Elegir acción del catálogo",
-    sectionNotInCatalog: "No esta en el catálogo",
+    sectionNotInCatalog: "No está en el catálogo",
     sectionClassification: "Clasificación",
     sectionPlanning: "Planificación",
+    sectionWhen: "Cuándo",
+    sectionMoreDetails: "Más detalles (tipo, estado, prioridad, varada, quién, dónde)",
+    taskAlreadyDone: "Ya la hice",
+    taskToDo: "Está por hacer",
+    taskPastDateHint: "Esa fecha ya ha pasado.",
+    taskMarkDoneThatDay: "Marcar como hecha ese día",
     sectionAttachments: "Adjuntos",
     // Maintenance / HaulOut form labels
-    labelAddPhoto: "Añadir fotografia",
+    labelAddPhoto: "Añadir fotografía",
     labelAddFile: "Añadir fichero",
     labelPerformedBy: "Realizado por",
     labelSearchAction: "Buscar acción",
@@ -567,7 +573,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     // Dashboard strings
     dashOverduePreventive: "periódicos vencidos",
     dashLowStock: "stock bajo mínimo",
-    dashOverduePreventiveTitle: "Periódicos vencidos",
+    dashOverduePreventiveTitle: "Plan de mantenimiento: qué toca",
     dashAllUpToDate: "Todo al día.",
     // Purchases table headers
     colArticle: "Articulo",
@@ -1157,6 +1163,12 @@ const dictionaries: Record<Locale, Dictionary> = {
     sectionNotInCatalog: "Not in catalog",
     sectionClassification: "Classification",
     sectionPlanning: "Planning",
+    sectionWhen: "When",
+    sectionMoreDetails: "More details (type, status, priority, haul-out, who, where)",
+    taskAlreadyDone: "Already done",
+    taskToDo: "To do",
+    taskPastDateHint: "That date is already past.",
+    taskMarkDoneThatDay: "Mark as done on that day",
     sectionAttachments: "Attachments",
     // Maintenance / HaulOut form labels
     labelAddPhoto: "Add photo",
@@ -1196,7 +1208,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     // Dashboard strings
     dashOverduePreventive: "overdue periodics",
     dashLowStock: "low stock",
-    dashOverduePreventiveTitle: "Overdue periodics",
+    dashOverduePreventiveTitle: "Maintenance plan: needs attention",
     dashAllUpToDate: "All up to date.",
     // Purchases table headers
     colArticle: "Article",

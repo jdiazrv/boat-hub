@@ -26,8 +26,8 @@ export function DashboardPage() {
     inventoryItems, inventoryItemsFull,
     maintenanceTasks, maintenanceTasksFull,
     preventiveTasks, preventiveTasksFull,
-    observations, futureActions, futurePurchases,
-    haulOuts, hourLogs, fuelLogs, marinas, shipyards,
+    observations,
+    haulOuts, hourLogs, fuelLogs,
     error,
   } = useAppData();
   const { activeBoatId, activeBoat } = useActiveBoat();
@@ -62,17 +62,17 @@ export function DashboardPage() {
   const myHourLogs      = filterBoat(hourLogs);
   const myFuelLogs      = filterBoat(fuelLogs);
   const myObservations  = filterBoat(observations);
-  const myFutureActions = filterBoat(futureActions);
-  const myPurchases     = filterBoat(futurePurchases);
   const myHaulOuts      = filterBoat(haulOuts);
 
   // Pending tasks (not done/cancelled)
   const pendingTasks   = myMaintenance.filter((t) => t.status !== "done" && t.status !== "cancelled");
   // Periodic maintenance comes from boat_maintenance_schedule (the same source as
   // the Periodicos page); the legacy preventive_plans table is only a fallback.
+  // Lo que pide atención en el plan: vencido o nunca registrado.
   const overduePerio = schedule
     ? schedule
-        .filter((e) => e.state === "overdue")
+        .filter((e) => e.state === "overdue" || e.state === "never")
+        .sort((a, b) => (a.state === b.state ? 0 : a.state === "overdue" ? -1 : 1))
         .map((e) => ({
           id: e.id,
           title:
@@ -80,8 +80,10 @@ export function DashboardPage() {
               ? e.template.titleEs || e.template.titleEn || e.template.title
               : e.template.titleEn || e.template.titleEs || e.template.title) ?? "",
           nextDueDate: e.nextDueDate,
+          never: e.state === "never",
         }))
-    : myPreventive.filter((t) => t.state === "overdue");
+    : myPreventive.filter((t) => t.state === "overdue").map((t) => ({ ...t, never: false }));
+  const neverLogged = overduePerio.filter((e) => e.never).length;
   const openObs        = myObservations.filter((o) => o.status === "open");
   const lowStock       = myInventory.filter((i) => i.stock != null && i.minimumStock != null && i.stock < i.minimumStock);
 
@@ -101,7 +103,7 @@ export function DashboardPage() {
   // Upcoming haul-out
   const nextHaulOut = myHaulOuts
     .filter((h) => h.status === "planned" || h.status === "preparing")
-    .sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""))[0] ?? null;
+    .sort((a, b) => (a.plannedDate ?? a.startDate ?? "9999").localeCompare(b.plannedDate ?? b.startDate ?? "9999"))[0] ?? null;
 
   const boatLabel = activeBoat ? activeBoat.name : allBoatsList.length > 0 ? t("allBoats") : t("noBoats");
   const today = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -129,9 +131,14 @@ export function DashboardPage() {
         <Link to="/maintenance" className="dash-pill" data-warn={pendingTasks.length > 0 || undefined}>
           {pendingTasks.length} {pendingTasks.length === 1 ? "tarea pendiente" : "tareas pendientes"}
         </Link>
-        <Link to="/preventive" className="dash-pill" data-warn={overduePerio.length > 0 || undefined}>
-          {overduePerio.length} {t("dashOverduePreventive")}
+        <Link to="/schedule" className="dash-pill" data-warn={overduePerio.length - neverLogged > 0 || undefined}>
+          {overduePerio.length - neverLogged} {t("dashOverduePreventive")}
         </Link>
+        {neverLogged > 0 && (
+          <Link to="/schedule" className="dash-pill" data-warn>
+            {neverLogged} sin registrar nunca
+          </Link>
+        )}
         <Link to="/observations" className="dash-pill" data-warn={openObs.length > 0 || undefined}>
           {openObs.length} observaciones abiertas
         </Link>
@@ -140,23 +147,13 @@ export function DashboardPage() {
             {lowStock.length} {t("dashLowStock")}
           </Link>
         )}
-        <Link to="/purchases" className="dash-pill">
-          {myPurchases.filter(p => p.status !== "cancelled" && p.status !== "received").length} compras pendientes
-        </Link>
-        <Link to="/future-actions" className="dash-pill">
-          {myFutureActions.filter(a => a.status !== "done" && a.status !== "cancelled").length} acciones futuras
-        </Link>
         {nextHaulOut && (
           <Link to="/haul-outs" className="dash-pill">
-            Próxima varada: {fmt(nextHaulOut.startDate)}
+            Próxima varada: {nextHaulOut.plannedDate || nextHaulOut.startDate
+              ? fmt(nextHaulOut.plannedDate ?? nextHaulOut.startDate)
+              : nextHaulOut.name}
           </Link>
         )}
-        <Link to="/marinas" className="dash-pill dash-pill--neutral">
-          {marinas.length} marinas
-        </Link>
-        <Link to="/shipyards" className="dash-pill dash-pill--neutral">
-          {shipyards.length} varaderos
-        </Link>
         <Link to="/inventory" className="dash-pill dash-pill--neutral">
           {myInventory.length} elementos inventario
         </Link>
@@ -236,13 +233,17 @@ export function DashboardPage() {
         <article className="panel-card">
           <div className="panel-head">
             <h3>{t("dashOverduePreventiveTitle")}</h3>
-            <Link to="/preventive" style={{ fontSize: "0.8rem", color: "var(--accent)" }}>Ver todos →</Link>
+            <Link to="/schedule" style={{ fontSize: "0.8rem", color: "var(--accent)" }}>Ver todos →</Link>
           </div>
           <div className="list-stack" style={{ gap: "0.25rem" }}>
             {overduePerio.slice(0, 6).map((task) => (
-              <Link to="/preventive" className="list-row dash-list-row" key={task.id} style={{ padding: "0.25rem 0" }}>
+              <Link to="/schedule" className="list-row dash-list-row" key={task.id} style={{ padding: "0.25rem 0" }}>
                 <strong style={{ fontSize: "0.9rem" }}>{task.title}</strong>
-                <span style={{ fontSize: "0.82rem", color: "var(--pill-critical, #ef4444)", flexShrink: 0 }}>{fmt(task.nextDueDate)}</span>
+                {task.never ? (
+                  <span style={{ fontSize: "0.82rem", color: "var(--text-soft)", flexShrink: 0 }}>Sin registrar</span>
+                ) : (
+                  <span style={{ fontSize: "0.82rem", color: "var(--pill-critical, #ef4444)", flexShrink: 0 }}>{fmt(task.nextDueDate)}</span>
+                )}
               </Link>
             ))}
             {overduePerio.length === 0 && <p style={{ color: "var(--text-soft)", margin: 0 }}>{t("dashAllUpToDate")}</p>}

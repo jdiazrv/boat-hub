@@ -1,4 +1,4 @@
-import { Link, createBrowserRouter } from "react-router-dom";
+import { Link, Navigate, createBrowserRouter } from "react-router-dom";
 import type { ComponentType } from "react";
 import { AppShell } from "./layouts/AppShell";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -30,7 +30,8 @@ export const router = createBrowserRouter([
       { path: "boats", lazy: page(() => import("./pages/BoatsPage"), "BoatsPage") },
       { path: "systems", lazy: page(() => import("./pages/BoatSystemsPage"), "BoatSystemsPage") },
       { path: "maintenance", lazy: page(() => import("./pages/MaintenancePage"), "MaintenancePage") },
-      { path: "preventive", lazy: page(() => import("./pages/PreventivePage"), "PreventivePage") },
+      // "Periódicos" era otra vista del mismo plan: ahora todo está en /schedule.
+      { path: "preventive", element: <Navigate to="/schedule" replace /> },
       { path: "haul-outs", lazy: page(() => import("./pages/HaulOutsPage"), "HaulOutsPage") },
       { path: "observations", lazy: page(() => import("./pages/ObservationsPage"), "ObservationsPage") },
       { path: "future-actions", lazy: page(() => import("./pages/FutureActionsPage"), "FutureActionsPage") },

@@ -104,6 +104,27 @@ function TaskForm({
     setForm((p) => ({ ...p, [k]: v }));
   }
 
+  const today = todayLocalISO();
+  const isClosed = form.status === "done" || form.status === "cancelled";
+  const dueDateIsPast = !isClosed && !!form.dueDate && form.dueDate < today;
+
+  // Cerrar la tarea: si ya había una fecha prevista pasada, esa es la fecha en que se hizo.
+  function setClosedStatus(status: "done" | "cancelled") {
+    setForm((p) => {
+      const dueIsPast = !!p.dueDate && p.dueDate <= today;
+      return {
+        ...p,
+        status,
+        doneDate: p.doneDate ?? (dueIsPast ? p.dueDate : today),
+        dueDate: !p.doneDate && dueIsPast ? null : p.dueDate,
+      };
+    });
+  }
+
+  function setOpenStatus(status: Exclude<typeof form.status, "done" | "cancelled">) {
+    setForm((p) => ({ ...p, status, doneDate: null }));
+  }
+
   function applyTemplate(templateId: string) {
     const template = templates.find((e) => e.id === templateId);
     if (!template) return;
@@ -112,8 +133,9 @@ function TaskForm({
       ...current,
       templateId: template.id,
       boatSystemId: matchingSystem?.id ?? current.boatSystemId,
-      title: locale === "es" ? template.titleEs || template.title : template.titleEn || template.title,
-      description: locale === "es" ? template.descriptionEs || template.description : template.descriptionEn || template.description,
+      // El registro de tareas se lleva en inglés, sea cual sea el idioma de la app.
+      title: template.titleEn || template.title,
+      description: template.descriptionEn || template.description,
       kind: template.kind,
       priority: template.defaultPriority,
     }));
@@ -194,7 +216,6 @@ function TaskForm({
     <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form, files); }}>
       <FormSection title="Tarea">
         <div className="form-boat-badge">{boatName}</div>
-        <HourCountersSummary counters={hourCounters} />
         <button className="btn-ghost" type="button" onClick={() => setStep("catalog")}>
           Cambiar acción
         </button>
@@ -203,71 +224,47 @@ function TaskForm({
           <option value="">-- Sistema --</option>
           {systems.map((s) => <option key={s.id} value={s.id}>{sysName(s, locale)}</option>)}
         </SelectField>
-        {systemComponents.length > 0 && (
-          <SelectField label="Equipo / Componente" value={form.boatComponentId ?? ""}
-            onChange={(e) => set("boatComponentId", e.target.value || null)}>
-            <option value="">-- Sin componente --</option>
-            {systemComponents.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </SelectField>
-        )}
         <InputField label={t("title")} required value={form.title} onChange={(e) => set("title", e.target.value)} />
         <TextareaField label={t("description")} value={form.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
       </FormSection>
 
-      <FormSection title={t("sectionClassification")}>
+      <FormSection title={t("sectionWhen")}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <button type="button" className={form.status === "done" ? "btn-primary" : "btn-ghost"}
+            aria-pressed={form.status === "done"} onClick={() => setClosedStatus("done")}>
+            {t("taskAlreadyDone")}
+          </button>
+          <button type="button" className={!isClosed ? "btn-primary" : "btn-ghost"}
+            aria-pressed={!isClosed} onClick={() => { if (isClosed) setOpenStatus("pending"); }}>
+            {t("taskToDo")}
+          </button>
+        </div>
         <FormGrid>
-          <SelectField label={t("kind")} value={form.kind} onChange={(e) => set("kind", e.target.value as typeof form.kind)}>
-            {KINDS.map((k) => <option key={k} value={k}>{t(`kind_${k}`)}</option>)}
-          </SelectField>
-          <SelectField label={t("status")} value={form.status} onChange={(e) => {
-            const newStatus = e.target.value as typeof form.status;
-            const isNowDone = newStatus === "done" || newStatus === "cancelled";
-            setForm((p) => ({
-              ...p,
-              status: newStatus,
-              doneDate: isNowDone ? (p.doneDate ?? todayLocalISO()) : null,
-            }));
-          }}>
-            {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
-          </SelectField>
-          <SelectField label={t("priority")} value={form.priority} onChange={(e) => set("priority", e.target.value as typeof form.priority)}>
-            {PRIORITIES.map((p) => <option key={p} value={p}>{t(p)}</option>)}
-          </SelectField>
-        </FormGrid>
-      </FormSection>
-
-      <FormSection title={t("sectionPlanning")}>
-        <FormGrid>
-          <SelectField label="Varada" value={form.haulOutId ?? ""}
-            onChange={(e) => {
-              const id = e.target.value || null;
-              const haul = haulOuts.find((h) => h.id === id);
-              set("haulOutId", id);
-              if (haul?.plannedDate) set("dueDate", haul.plannedDate);
-            }}>
-            <option value="">— Sin varada —</option>
-            {haulOuts.map((h) => <option key={h.id} value={h.id}>{h.name}{h.plannedDate ? ` (${h.plannedDate})` : ""}</option>)}
-          </SelectField>
-          {(form.status !== "done" && form.status !== "cancelled") && (
+          {!isClosed && (
             <InputField label={form.haulOutId ? "Fecha prevista en varada" : t("dueDate")} type="date" value={form.dueDate ?? ""}
               onChange={(e) => set("dueDate", e.target.value || null)} />
           )}
-          {(form.status === "done" || form.status === "cancelled") && (
-            <InputField label={t("doneDate")} type="date" value={form.doneDate ?? ""}
+          {dueDateIsPast && (
+            <p className="field-hint" style={{ gridColumn: "1 / -1", margin: 0 }}>
+              {t("taskPastDateHint")}{" "}
+              <button type="button" className="btn-ghost" style={{ padding: "0.3rem 0.7rem", fontSize: "0.8rem" }}
+                onClick={() => setClosedStatus("done")}>
+                {t("taskMarkDoneThatDay")}
+              </button>
+            </p>
+          )}
+          {isClosed && (
+            <InputField label={t("doneDate")} type="date" value={form.doneDate ?? ""} max={today}
               onChange={(e) => set("doneDate", e.target.value || null)} />
           )}
-          <InputField label={t("responsible")} value={form.responsible ?? ""}
-            onChange={(e) => set("responsible", e.target.value || null)} />
-          <InputField label={t("labelPerformedBy")} value={form.performedBy ?? ""}
-            onChange={(e) => set("performedBy", e.target.value || null)} />
-          <InputField label={t("engineHours")} type="number" value={form.engineHours ?? ""}
-            onChange={(e) => set("engineHours", e.target.value ? Number(e.target.value) : null)} />
+          {isClosed && (
+            <InputField label={t("engineHours")} type="number" step="0.1" value={form.engineHours ?? ""}
+              onChange={(e) => set("engineHours", e.target.value ? Number(e.target.value) : null)} />
+          )}
           <InputField label={t("cost")} type="number" value={form.cost ?? ""}
             onChange={(e) => set("cost", e.target.value ? Number(e.target.value) : null)} />
-          <div style={{ gridColumn: "1 / -1" }}>
-            <LocationSearch label="Lugar donde se realiza" value={form.location ?? null} onChange={(v) => set("location", v)} />
-          </div>
         </FormGrid>
+        {isClosed && <HourCountersSummary counters={hourCounters} />}
         <TextareaField label={t("notes")} value={form.notes ?? ""}
           onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
@@ -291,6 +288,52 @@ function TaskForm({
           </div>
         )}
       </FormSection>
+
+      {/* Lo que casi nunca hace falta, plegado. */}
+      <details className="form-more">
+        <summary>{t("sectionMoreDetails")}</summary>
+        <FormGrid>
+          {systemComponents.length > 0 && (
+            <SelectField label="Equipo / Componente" value={form.boatComponentId ?? ""}
+              onChange={(e) => set("boatComponentId", e.target.value || null)}>
+              <option value="">-- Sin componente --</option>
+              {systemComponents.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </SelectField>
+          )}
+          <SelectField label={t("kind")} value={form.kind} onChange={(e) => set("kind", e.target.value as typeof form.kind)}>
+            {KINDS.map((k) => <option key={k} value={k}>{t(`kind_${k}`)}</option>)}
+          </SelectField>
+          <SelectField label={t("status")} value={form.status} onChange={(e) => {
+            const newStatus = e.target.value as typeof form.status;
+            if (newStatus === "done" || newStatus === "cancelled") setClosedStatus(newStatus);
+            else setOpenStatus(newStatus);
+          }}>
+            {STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
+          </SelectField>
+          {!isClosed && (
+            <SelectField label={t("priority")} value={form.priority} onChange={(e) => set("priority", e.target.value as typeof form.priority)}>
+              {PRIORITIES.map((p) => <option key={p} value={p}>{t(p)}</option>)}
+            </SelectField>
+          )}
+          <SelectField label="Varada" value={form.haulOutId ?? ""}
+            onChange={(e) => {
+              const id = e.target.value || null;
+              const haul = haulOuts.find((h) => h.id === id);
+              set("haulOutId", id);
+              if (haul?.plannedDate) set("dueDate", haul.plannedDate);
+            }}>
+            <option value="">— Sin varada —</option>
+            {haulOuts.map((h) => <option key={h.id} value={h.id}>{h.name}{h.plannedDate ? ` (${h.plannedDate})` : ""}</option>)}
+          </SelectField>
+          <InputField label={t("responsible")} value={form.responsible ?? ""}
+            onChange={(e) => set("responsible", e.target.value || null)} />
+          <InputField label={t("labelPerformedBy")} value={form.performedBy ?? ""}
+            onChange={(e) => set("performedBy", e.target.value || null)} />
+          <div style={{ gridColumn: "1 / -1" }}>
+            <LocationSearch label="Lugar donde se realiza" value={form.location ?? null} onChange={(v) => set("location", v)} />
+          </div>
+        </FormGrid>
+      </details>
 
       {error && <p className="form-error">{error}</p>}
       <FormActions onCancel={onCancel} loading={loading} disabled={editing && !isDirty} danger={!!onDelete} onDanger={onDelete} dangerLabel={t("delete")} />

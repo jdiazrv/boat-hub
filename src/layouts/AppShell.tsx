@@ -72,10 +72,7 @@ const NAV_GROUPS: NavGroupDef[] = [
     collapsible: true,
     links: [
       { to: "/schedule", key: "maintenanceSchedule" },
-      { to: "/preventive", key: "preventive" },
       { to: "/haul-outs", key: "haulOuts" },
-      { to: "/future-actions", key: "futureActions" },
-      { to: "/purchases", key: "purchases" },
     ],
   },
   {
@@ -93,7 +90,6 @@ const CONFIG_LINKS: NavItem[] = [
   { to: "/systems", key: "systems" },
   { to: "/admin/maintenance-templates", key: "adminMaintenanceTemplates", requiresBoat: true },
   { to: "/hour-counters", key: "hourCounters", requiresBoat: true },
-  { to: "/inventory-catalog", key: "inventoryCatalog", requiresBoat: true },
 ];
 const ADMIN_LINKS: NavItem[] = [
   { to: "/admin/users", key: "adminUsers" },

@@ -155,7 +155,8 @@ export type BoatScheduleEntry = {
   currentHours: number | null;
   // joined
   template: MaintenanceTemplate;
-  state: "ok" | "due_soon" | "overdue";
+  /** never = está en el plan pero nunca se ha registrado: no se sabe cuándo toca. */
+  state: "ok" | "due_soon" | "overdue" | "never";
 };
 
 // ─── Owner ────────────────────────────────────────────────────────────────────

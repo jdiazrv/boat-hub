@@ -1185,7 +1185,8 @@ export function counterForSchedule(
 const STATE_RANK: Record<BoatScheduleEntry["state"], number> = {
   ok: 0,
   due_soon: 1,
-  overdue: 2,
+  never: 2,
+  overdue: 3,
 };
 
 function mapScheduleRow(r: any, counters: HourCounter[] = []): BoatScheduleEntry {
@@ -1212,6 +1213,8 @@ function mapScheduleRow(r: any, counters: HourCounter[] = []): BoatScheduleEntry
     currentHours,
   );
   if (STATE_RANK[byHours.state] > STATE_RANK[state]) state = byHours.state;
+  // Sin ninguna vez registrada no hay de dónde contar: hay que avisar igual.
+  if (!r.last_done_at && r.last_done_engine_hours == null && state === "ok") state = "never";
   return {
     id: r.id,
     boatId: r.boat_id,
@@ -1559,7 +1562,7 @@ export async function fetchObservations(boatScope?: string | string[]): Promise<
     description: r.description,
     priority: r.priority,
     status: r.status,
-    observedAt: r.observed_at,
+    observedAt: r.observed_at ? String(r.observed_at).slice(0, 10) : null,
     reportedBy: r.noted_by,
     notes: r.notes,
     systemName: r.boat_systems?.system_catalog?.name_en ?? "Other",

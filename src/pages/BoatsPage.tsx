@@ -128,7 +128,7 @@ function BoatForm({
 export function BoatsPage() {
   const { t } = useI18n();
   const { session } = useAuth();
-  const { boats, allBoats, refresh, loading } = useAppData();
+  const { boats, allBoats, haulOuts, maintenanceTasksFull, refresh, loading } = useAppData();
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<Boat | null>(null);
   const [detailBoat, setDetailBoat] = useState<Boat | null>(null);
@@ -138,6 +138,20 @@ export function BoatsPage() {
 
   const { activeBoatId } = useActiveBoat();
   const displayBoats = isSupabaseConfigured ? allBoats : boats;
+
+  // Próxima varada y tareas abiertas de cada barco, de los datos ya cargados.
+  function boatStatus(boatId: string) {
+    const next = haulOuts
+      .filter((h) => h.boatId === boatId && (h.status === "planned" || h.status === "preparing" || h.status === "in_progress"))
+      .sort((a, b) => (a.plannedDate ?? a.startDate ?? "9999").localeCompare(b.plannedDate ?? b.startDate ?? "9999"))[0];
+    const openTasks = maintenanceTasksFull.filter(
+      (task) => task.boatId === boatId && task.status !== "done" && task.status !== "cancelled",
+    ).length;
+    return {
+      nextHaulOut: next ? (next.plannedDate ?? next.startDate ?? next.name) : null,
+      openTasks,
+    };
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -301,11 +315,11 @@ export function BoatsPage() {
               <div className="detail-grid">
                 <div>
                   <span>{t("nextHaulOut")}</span>
-                  <strong>{("nextHaulOut" in boat ? (boat as typeof boats[0]).nextHaulOut : null) ?? "-"}</strong>
+                  <strong>{("nextHaulOut" in boat ? (boat as typeof boats[0]).nextHaulOut : boatStatus(boat.id).nextHaulOut) ?? "-"}</strong>
                 </div>
                 <div>
                   <span>{t("openTasks")}</span>
-                  <strong>{("openTasks" in boat ? (boat as typeof boats[0]).openTasks : "-")}</strong>
+                  <strong>{("openTasks" in boat ? (boat as typeof boats[0]).openTasks : boatStatus(boat.id).openTasks)}</strong>
                 </div>
                 {isSupabaseConfigured && "brandModel" in boat && (boat as Boat).brandModel && (
                   <div>
