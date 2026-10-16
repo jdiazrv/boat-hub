@@ -1076,14 +1076,25 @@ export async function deleteMaintenanceTask(id: string) {
   if (error) throw error;
 }
 
+/** Lo que puede llevar fotos y ficheros adjuntos (attachments.target_type). */
+export type AttachmentTarget = "maintenance_task" | "inventory_item";
+
 export async function uploadTaskAttachments(boatId: string, taskId: string, files: File[]) {
+  return uploadAttachments(boatId, "maintenance_task", taskId, files);
+}
+
+export async function fetchTaskAttachments(taskId: string) {
+  return fetchAttachments("maintenance_task", taskId);
+}
+
+export async function uploadAttachments(boatId: string, targetType: AttachmentTarget, targetId: string, files: File[]) {
   if (!files.length) return;
 
   const client = db();
 
   for (const file of files) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `${boatId}/maintenance_task/${taskId}/${crypto.randomUUID()}-${safeName}`;
+    const storagePath = `${boatId}/${targetType}/${targetId}/${crypto.randomUUID()}-${safeName}`;
 
     const { error: uploadError } = await client.storage
       .from("attachments")
@@ -1096,8 +1107,8 @@ export async function uploadTaskAttachments(boatId: string, taskId: string, file
 
     const { error } = await client.from("attachments").insert({
       boat_id: boatId,
-      target_type: "maintenance_task",
-      target_id: taskId,
+      target_type: targetType,
+      target_id: targetId,
       file_name: file.name,
       storage_bucket: "attachments",
       storage_path: storagePath,
@@ -1110,13 +1121,13 @@ export async function uploadTaskAttachments(boatId: string, taskId: string, file
   }
 }
 
-export async function fetchTaskAttachments(taskId: string): Promise<import("./types").TaskAttachment[]> {
+export async function fetchAttachments(targetType: AttachmentTarget, targetId: string): Promise<import("./types").TaskAttachment[]> {
   const client = db();
   const { data, error } = await client
     .from("attachments")
     .select("id, file_name, storage_path, mime_type, file_size_bytes, document_category, created_at")
-    .eq("target_type", "maintenance_task")
-    .eq("target_id", taskId)
+    .eq("target_type", targetType)
+    .eq("target_id", targetId)
     .order("created_at", { ascending: true });
   if (error) throw error;
 
@@ -1801,7 +1812,7 @@ export async function fetchInventoryItems(boatScope?: string | string[]): Promis
 }
 
 export async function createInventoryItem(payload: Omit<InventoryItem, "id" | "boatName" | "systemName" | "system" | "minimum">) {
-  const { error } = await db().from("inventory_items").insert({
+  const { data, error } = await db().from("inventory_items").insert({
     boat_id: payload.boatId,
     boat_system_id: payload.boatSystemId,
     boat_component_id: payload.boatComponentId,
@@ -1823,8 +1834,9 @@ export async function createInventoryItem(payload: Omit<InventoryItem, "id" | "b
     acquisition_cost: payload.acquisitionCost,
     unit_cost: payload.cost,
     notes: payload.notes,
-  });
+  }).select("id").single();
   if (error) throw error;
+  return data as { id: string };
 }
 
 export async function updateInventoryItem(id: string, payload: Partial<Omit<InventoryItem, "id" | "boatName" | "systemName" | "system" | "minimum">>) {
@@ -1854,7 +1866,18 @@ export async function updateInventoryItem(id: string, payload: Partial<Omit<Inve
 }
 
 export async function deleteInventoryItem(id: string) {
-  const { error } = await db().from("inventory_items").delete().eq("id", id);
+  const client = db();
+  // Fotos primero: los adjuntos solo apuntan al elemento por id, nada se borra en cascada.
+  const { data: photos } = await client
+    .from("attachments")
+    .select("id, storage_path")
+    .eq("target_type", "inventory_item")
+    .eq("target_id", id);
+  if (photos?.length) {
+    await client.storage.from("attachments").remove(photos.map((p: any) => p.storage_path));
+    await client.from("attachments").delete().in("id", photos.map((p: any) => p.id));
+  }
+  const { error } = await client.from("inventory_items").delete().eq("id", id);
   if (error) throw error;
 }
 

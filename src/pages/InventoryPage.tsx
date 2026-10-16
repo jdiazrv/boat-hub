@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSelectMode, SelectModeHeaderButtons, SelectAllCheckbox, SelectRowCheckbox, BulkDeleteBar } from "../components/SelectModeBar";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import * as db from "../lib/db";
-import type { BoatComponent, BoatSystem, InventoryCategory, InventoryCatalogItem, InventoryItem, InventoryStatus } from "../lib/types";
+import type { BoatComponent, BoatSystem, InventoryCategory, InventoryCatalogItem, InventoryItem, InventoryStatus, TaskAttachment } from "../lib/types";
+import { AttachmentGallery } from "../components/AttachmentGallery";
 import {
   FormActions,
   FormGrid,
@@ -54,6 +55,7 @@ function InventoryForm({
   components,
   catalog,
   editing,
+  existingAttachments,
   onSave,
   onDelete,
   onCancel,
@@ -66,7 +68,8 @@ function InventoryForm({
   components: BoatComponent[];
   catalog: InventoryCatalogItem[];
   editing: boolean;
-  onSave: (d: FormPayload) => void;
+  existingAttachments: TaskAttachment[];
+  onSave: (d: FormPayload, files: File[]) => void;
   onDelete?: () => void;
   onCancel: () => void;
   loading: boolean;
@@ -81,6 +84,9 @@ function InventoryForm({
   const [manualName, setManualName] = useState("");
   const [manualCategory, setManualCategory] = useState<InventoryCategory>("main_equipment");
   const [form, setForm] = useState(initial);
+  const [attachments, setAttachments] = useState<TaskAttachment[]>(existingAttachments);
+  const [files, setFiles] = useState<File[]>([]);
+  useEffect(() => { setAttachments(existingAttachments); }, [existingAttachments]);
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((p) => ({ ...p, [k]: v }));
@@ -208,7 +214,7 @@ function InventoryForm({
   }
 
   return (
-    <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+    <form className="form-stack" onSubmit={(e) => { e.preventDefault(); onSave(form, files); }}>
       <FormSection title={t("sectionIdentification")}>
         <div className="form-boat-badge">{boatName}</div>
         {!editing && (
@@ -306,6 +312,26 @@ function InventoryForm({
         <TextareaField label="Notas" value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} />
       </FormSection>
 
+      <FormSection title={t("sectionAttachments")}>
+        <AttachmentGallery
+          attachments={attachments}
+          onDeleted={(id) => setAttachments((prev) => prev.filter((a) => a.id !== id))}
+        />
+        <FormGrid>
+          <InputField label={t("labelAddPhoto")} type="file" accept="image/*" multiple
+            onChange={(e) => setFiles((current) => [...current, ...Array.from(e.target.files ?? [])])} />
+          <InputField label={t("labelAddFile")} type="file" multiple
+            onChange={(e) => setFiles((current) => [...current, ...Array.from(e.target.files ?? [])])} />
+        </FormGrid>
+        {files.length > 0 && (
+          <div className="attachment-preview-list">
+            {files.map((file, index) => (
+              <span className="pill" key={`${file.name}-${index}`}>{file.name}</span>
+            ))}
+          </div>
+        )}
+      </FormSection>
+
       {error && <p className="form-error">{error}</p>}
       <FormActions onCancel={onCancel} loading={loading} danger={!!onDelete} onDanger={onDelete} dangerLabel="Eliminar" />
     </form>
@@ -321,6 +347,7 @@ export function InventoryPage() {
   const { activeBoatId, activeBoat } = useActiveBoat();
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
+  const [editingAttachments, setEditingAttachments] = useState<TaskAttachment[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterSystem, setFilterSystem] = useState("");
@@ -389,11 +416,17 @@ export function InventoryPage() {
     notes: null,
   };
 
-  function openCreate() { setEditing(null); setError(null); setModal("create"); }
-  function openEdit(item: InventoryItem) { setEditing(item); setError(null); setModal("edit"); }
-  function closeModal() { setModal(null); setEditing(null); }
+  function openCreate() { setEditing(null); setEditingAttachments([]); setError(null); setModal("create"); }
+  function openEdit(item: InventoryItem) {
+    setEditing(item);
+    setEditingAttachments([]);
+    setError(null);
+    setModal("edit");
+    db.fetchAttachments("inventory_item", item.id).then(setEditingAttachments).catch(() => {});
+  }
+  function closeModal() { setModal(null); setEditing(null); setEditingAttachments([]); }
 
-  async function handleSave(data: FormPayload) {
+  async function handleSave(data: FormPayload, files: File[]) {
     const payload = { ...data, boatId: activeBoatId ?? data.boatId };
     if (!payload.boatId) { setError("No hay barco activo"); return; }
     if (!payload.boatSystemId) {
@@ -407,8 +440,10 @@ export function InventoryPage() {
     }
     setSaving(true); setError(null);
     try {
+      let itemId = editing?.id;
       if (editing) await db.updateInventoryItem(editing.id, payload);
-      else await db.createInventoryItem(payload);
+      else itemId = (await db.createInventoryItem(payload)).id;
+      if (itemId && files.length) await db.uploadAttachments(payload.boatId, "inventory_item", itemId, files);
       await refresh(); closeModal();
     } catch (err) { setError(err instanceof Error ? err.message : "Error"); }
     finally { setSaving(false); }
@@ -597,6 +632,7 @@ export function InventoryPage() {
             components={boatComponents}
             catalog={inventoryCatalog}
             editing={!!editing}
+            existingAttachments={editingAttachments}
             onSave={handleSave}
             onDelete={editing ? handleDelete : undefined}
             onCancel={closeModal}
